@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: issue-tracker-postgres
+    environment:
+      POSTGRES_DB: issue_tracker_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - issue-tracker-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: issue-tracker-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - issue-tracker-network
+    command: redis-server --appendonly yes
+
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: issue-tracker-postgres-test
+    environment:
+      POSTGRES_DB: issue_tracker_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - issue-tracker-network
+    profiles:
+      - test
+
+volumes:
+  postgres_data:
+  postgres_test_data:
+  redis_data:
+
+networks:
+  issue-tracker-network:
+    driver: bridge

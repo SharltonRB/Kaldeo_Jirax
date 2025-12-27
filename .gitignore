@@ -1,0 +1,236 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+logs/
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Spring Boot
+application-local.yml
+application-local.properties
+
+# Database
+*.db
+*.sqlite
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+*.env
+environment.properties
+secrets.properties
+
+# Security & Credentials
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+*.truststore
+keystore.jks
+truststore.jks
+application-secrets.yml
+application-secrets.properties
+secrets/
+credentials/
+certs/
+ssl/
+
+# Spring Boot specific
+application-local.yml
+application-local.properties
+application-secret.yml
+application-secret.properties
+application-private.yml
+application-private.properties
+bootstrap-local.yml
+bootstrap-local.properties
+
+# Database connection files
+datasource.properties
+database.properties
+db-config.properties
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*~
+
+# Test coverage reports
+jacoco.exec
+*.exec
+coverage/
+test-results/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.prod.yml
+
+# Logs and monitoring
+*.log.*
+logs/
+log/
+*.out
+nohup.out
+gc.log*
+heap-dump-*
+thread-dump-*
+
+# Frontend (for future use)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+
+# Personal notes and documentation
+TODO.md
+NOTES.md
+personal-notes/
+scratch/
+# AWS & Cloud credentials
+.aws/
+aws-credentials
+aws-config
+gcp-credentials.json
+azure-credentials
+
+# API Keys and tokens
+api-keys.txt
+tokens.txt
+*.token
+auth-config.json
+
+# Backup files
+*.sql.backup
+*.dump
+backup/
+backups/
+
+# Performance profiling
+*.hprof
+*.prof
+profiler/
+
+# Local development overrides
+local/
+local-config/
+dev-overrides/
+
+# Generated documentation
+docs/generated/
+javadoc/
+
+# Cache directories
+.cache/
+cache/
+tmp/
+
+# IDE specific (additional)
+.metadata/
+.recommenders/
+.settings/
+bin/
+.classpath
+.project
+.factorypath
+.springBeans
+.sts4-cache/
+
+# JetBrains specific
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+
+# Eclipse specific
+.metadata
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# NetBeans specific
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code specific
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+# Kiro - Include specs but exclude sensitive configs
+.kiro/settings/
+.kiro/cache/
+.kiro/logs/
+.kiro/temp/
+.kiro/user-*
+.kiro/personal-*
+.kiro/private-*
