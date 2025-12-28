@@ -1,15 +1,11 @@
 package com.issuetracker.entity;
 
-import com.issuetracker.base.BaseIntegrationTest;
-import com.issuetracker.base.BasePropertyTest;
+import com.issuetracker.base.BasePostgreSQLTest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
+import org.quicktheories.QuickTheory;
 import org.quicktheories.core.Gen;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.annotation.Rollback;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,12 +17,12 @@ import static org.quicktheories.generators.SourceDSL.*;
  * Property-based tests for entity relationships and user data isolation.
  * Feature: personal-issue-tracker, Property 1: User Data Isolation
  * Validates: Requirements 1.3, 1.5, 2.3, 2.4, 3.4, 4.3, 5.5, 6.4, 8.4
+ * Uses Testcontainers with PostgreSQL for production parity and full isolation.
  */
-@DataJpaTest
-@Transactional
-@Rollback
-@ActiveProfiles("test")
-public class EntityRelationshipsPropertyTest extends BasePropertyTest {
+public class EntityRelationshipsPropertyTest extends BasePostgreSQLTest {
+
+    // QuickTheory instance for property testing
+    private static final QuickTheory qt = QuickTheory.qt();
 
     @PersistenceContext
     private EntityManager entityManager;

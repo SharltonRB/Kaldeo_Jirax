@@ -1,10 +1,6 @@
 spring:
-  # H2 in-memory database for fast local development
-  datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
+  # This profile is used with Testcontainers
+  # Database properties are set dynamically by Testcontainers
   
   jpa:
     hibernate:
@@ -12,20 +8,17 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   
   flyway:
     enabled: false
-  
-  h2:
-    console:
-      enabled: true
 
 logging:
   level:
     com.issuetracker: WARN
     org.springframework: WARN
     org.hibernate: WARN
+    org.testcontainers: INFO
 
 # Test-specific JWT secret (base64 encoded)
 jwt:
