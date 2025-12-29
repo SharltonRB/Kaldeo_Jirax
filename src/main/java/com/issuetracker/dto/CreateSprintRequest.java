@@ -1,6 +1,7 @@
 package com.issuetracker.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.issuetracker.validation.ValidSprintDates;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
  * Request DTO for creating a new sprint.
  * Contains validation rules for sprint creation.
  */
+@ValidSprintDates
 public class CreateSprintRequest {
 
     @NotBlank(message = "Sprint name is required")
