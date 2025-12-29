@@ -189,12 +189,18 @@ class InputValidationPropertyTest extends BasePostgreSQLTest {
             return false;
         }
         
-        // Story points validation: optional, non-negative
-        if (storyPoints != null && storyPoints < 0) {
+        // Story points validation: optional, must be valid Fibonacci values
+        if (storyPoints != null && !isValidStoryPoints(storyPoints)) {
             return false;
         }
         
         return true;
+    }
+
+    private boolean isValidStoryPoints(Integer storyPoints) {
+        // Must match the same validation as StoryPointsValidator
+        Set<Integer> validStoryPoints = Set.of(0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89);
+        return validStoryPoints.contains(storyPoints);
     }
 
     private boolean isValidLabelInput(String name, String color) {
@@ -309,15 +315,26 @@ class InputValidationPropertyTest extends BasePostgreSQLTest {
     }
 
     private Gen<Integer> storyPoints() {
-        return integers().between(-15, 105)
+        return integers().between(0, 10)
                 .map(i -> {
-                    // Generate mix of valid and invalid story points
-                    int variant = i % 3;
+                    // Generate mix of valid Fibonacci values and invalid values
+                    int variant = i % 5;
                     switch (variant) {
-                        case 0: return i >= 0 && i <= 100 ? i : Math.abs(i % 101); // Valid values
-                        case 1: return i < 0 ? i : -Math.abs(i); // Invalid negative values
-                        case 2: return null; // null values
-                        default: return i;
+                        case 0: // Valid Fibonacci values
+                            Integer[] validValues = {0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89};
+                            return validValues[i % validValues.length];
+                        case 1: // Invalid positive values (not Fibonacci)
+                            Integer[] invalidValues = {4, 6, 7, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 22, 100};
+                            return invalidValues[i % invalidValues.length];
+                        case 2: // Invalid negative values
+                            return -Math.abs(i + 1);
+                        case 3: // null values
+                            return null;
+                        case 4: // More valid Fibonacci values
+                            Integer[] moreValidValues = {1, 3, 8, 21, 55};
+                            return moreValidValues[i % moreValidValues.length];
+                        default: 
+                            return i;
                     }
                 });
     }

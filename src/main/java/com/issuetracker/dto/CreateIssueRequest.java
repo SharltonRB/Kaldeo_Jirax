@@ -1,6 +1,7 @@
 package com.issuetracker.dto;
 
 import com.issuetracker.entity.Priority;
+import com.issuetracker.validation.ValidStoryPoints;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +25,7 @@ public class CreateIssueRequest {
     @NotNull(message = "Issue priority is required")
     private Priority priority;
 
-    @Min(value = 0, message = "Story points must be non-negative")
+    @ValidStoryPoints
     private Integer storyPoints;
 
     @NotNull(message = "Project ID is required")

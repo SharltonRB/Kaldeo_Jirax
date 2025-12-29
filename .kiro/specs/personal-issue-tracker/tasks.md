@@ -146,22 +146,22 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - **Validates: Requirements 2.2, 3.2, 3.5, 4.1, 5.2, 6.5, 9.1**
     - **Status: PASSED** - Property test successfully validates input validation consistency across all entities using Jakarta Bean Validation. Test runs 100 iterations and correctly identifies validation violations for invalid inputs while accepting valid inputs. The test uses direct DTO validation to avoid Hibernate session management issues and provides comprehensive coverage of validation rules for projects, issues, and labels. All validation constraints are properly enforced according to business requirements.
 
-- [ ] 7. Global Error Handling and Validation
-  - [ ] 7.1 Implement GlobalExceptionHandler
+- [x] 7. Global Error Handling and Validation
+  - [x] 7.1 Implement GlobalExceptionHandler
     - Create consistent error response format
     - Handle all exception types with appropriate HTTP status codes
     - _Requirements: 9.3, 13.2_
 
-  - [ ] 7.2 Write property test for security hardening
+  - [x] 7.2 Write property test for security hardening
     - **Property 12: Security Hardening**
     - **Validates: Requirements 9.3, 9.4, 9.5**
 
-  - [ ] 7.3 Add comprehensive input validation
+  - [x] 7.3 Add comprehensive input validation
     - Implement jakarta.validation annotations across all DTOs
     - Add custom validators for business rules
     - _Requirements: 9.1_
 
-- [ ] 8. Checkpoint - Backend Core Complete
+- [x] 8. Checkpoint - Backend Core Complete
   - Ensure all backend tests pass and APIs are functional
   - Verify authentication, authorization, and data isolation work correctly
   - Test API endpoints with Postman or similar tool
