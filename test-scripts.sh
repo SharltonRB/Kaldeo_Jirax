@@ -1,81 +1,75 @@
 #!/bin/bash
 
-# Testing Scripts for Personal Issue Tracker
-# Provides convenient commands for different testing scenarios
+# Script para ejecutar diferentes tipos de tests de manera optimizada
 
 set -e
 
-echo "🧪 Personal Issue Tracker - Testing Scripts"
-echo "=========================================="
+echo "🧪 Personal Issue Tracker - Test Scripts"
+echo "========================================"
 
-case "$1" in
-    "fast"|"h2"|"")
-        echo "🚀 Running FAST tests with H2 database..."
-        echo "   - Perfect for local development"
-        echo "   - No Docker required"
-        echo "   - Runs in seconds"
-        echo ""
-        mvn test -Dtest='!**/*TestcontainersTest'
+case "${1:-help}" in
+    "fast")
+        echo "🚀 Ejecutando tests rápidos (sin property tests)..."
+        mvn clean test -Pfast-tests
         ;;
-    
-    "production"|"postgres"|"testcontainers")
-        echo "🐘 Running PRODUCTION tests with PostgreSQL (Testcontainers)..."
-        echo "   - Production parity testing"
-        echo "   - Requires Docker"
-        echo "   - Takes longer but more accurate"
-        echo ""
-        mvn test -Dspring.profiles.active=testcontainers
+    "quick-property")
+        echo "⚡ Ejecutando property tests rápidos (10 casos por test)..."
+        mvn clean test -Pquick-property-tests
         ;;
-    
+    "unit")
+        echo "🔧 Ejecutando solo tests unitarios..."
+        mvn test -Dtest="!*PropertyTest,!*IntegrationTest"
+        ;;
     "property")
-        echo "🔬 Running PROPERTY tests (H2 - Fast)..."
-        echo "   - Property-based testing"
-        echo "   - Fast feedback loop"
-        echo ""
+        echo "🎲 Ejecutando property tests con configuración normal (25 casos)..."
         mvn test -Dtest="*PropertyTest"
         ;;
-    
+    "integration")
+        echo "🔗 Ejecutando tests de integración..."
+        mvn test -Dtest="*IntegrationTest"
+        ;;
     "ci")
-        echo "🤖 Running CI/CD test suite..."
-        echo "   Step 1: Fast tests (H2)"
-        mvn test -Dtest='!**/*TestcontainersTest'
-        echo ""
-        echo "   Step 2: Production tests (PostgreSQL)"
-        mvn test -Dspring.profiles.active=testcontainers
-        echo ""
-        echo "✅ All CI/CD tests passed!"
+        echo "🏗️ Ejecutando suite completa para CI (100 casos por property test)..."
+        mvn clean test -Pci-tests
         ;;
-    
-    "install")
-        echo "📦 Running Maven clean install (without Docker tests)..."
-        echo "   - Compiles, tests, and packages the application"
-        echo "   - Skips Testcontainers tests (no Docker required)"
-        echo "   - Creates JAR file in target/"
-        echo ""
-        mvn clean install -Dtest='!**/*TestcontainersTest'
+    "compile")
+        echo "🔨 Solo compilando sin ejecutar tests..."
+        mvn clean compile test-compile
         ;;
-    
-    "help"|"-h"|"--help")
-        echo "Available commands:"
-        echo ""
-        echo "  fast, h2          - Fast tests with H2 (default)"
-        echo "  production        - Production tests with PostgreSQL"
-        echo "  property          - Property tests (H2)"
-        echo "  ci                - Full CI/CD test suite"
-        echo "  install           - Maven clean install (without Docker tests)"
-        echo "  help              - Show this help"
-        echo ""
-        echo "Examples:"
-        echo "  ./test-scripts.sh                    # Fast H2 tests"
-        echo "  ./test-scripts.sh production         # PostgreSQL tests"
-        echo "  ./test-scripts.sh property           # Property tests"
-        echo "  ./test-scripts.sh install            # Clean install"
-        echo "  ./test-scripts.sh ci                 # Full CI suite"
+    "install-fast"|"install")
+        echo "📦 Instalando con tests rápidos..."
+        mvn clean install -Pfast-tests
         ;;
-    
-    *)
-        echo "❌ Unknown command: $1"
-        echo "Run './test-scripts.sh help' for available commands"
-        exit 1
+    "install-skip")
+        echo "📦 Instalando sin tests..."
+        mvn clean install -DskipTests
+        ;;
+    "build")
+        echo "🏗️ Build completo rápido (alias para install-fast)..."
+        mvn clean install -Pfast-tests
+        ;;
+    "help"|*)
+        echo "Uso: $0 [comando]"
+        echo ""
+        echo "Comandos disponibles:"
+        echo "  fast            - Tests rápidos (excluye property tests)"
+        echo "  quick-property  - Property tests rápidos (10 casos)"
+        echo "  unit           - Solo tests unitarios"
+        echo "  property       - Property tests normales (25 casos)"
+        echo "  integration    - Tests de integración"
+        echo "  ci             - Suite completa para CI (100 casos)"
+        echo "  compile        - Solo compilar sin ejecutar tests"
+        echo "  install        - mvn install con tests rápidos (RECOMENDADO)"
+        echo "  install-fast   - Alias para install"
+        echo "  install-skip   - mvn install sin tests"
+        echo "  build          - Alias para install-fast"
+        echo "  help           - Mostrar esta ayuda"
+        echo ""
+        echo "🚀 Comandos más usados:"
+        echo "  ./test-scripts.sh install    # Para build diario (8 segundos)"
+        echo "  ./test-scripts.sh fast       # Para verificar tests (8 segundos)"
+        echo "  ./test-scripts.sh ci         # Para verificación completa (2-3 min)"
+        echo ""
+        echo "💡 Tip: 'install' es ahora el comando por defecto recomendado"
         ;;
 esac

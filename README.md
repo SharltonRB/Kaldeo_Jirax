@@ -2,6 +2,27 @@
 
 A Jira-inspired personal project management application built with Spring Boot and React TypeScript.
 
+## 🚀 Quick Start
+
+### Fast Development Build (Recommended)
+```bash
+# Build completo optimizado en ~8 segundos
+./test-scripts.sh build
+
+# O usando Maven directamente
+mvn clean install -Pfast-tests
+```
+
+### Testing Options
+```bash
+./test-scripts.sh help           # Ver todas las opciones disponibles
+./test-scripts.sh fast           # Tests rápidos sin property tests (8 seg)
+./test-scripts.sh install        # Build rápido recomendado (8 seg)
+./test-scripts.sh ci             # Tests completos para CI (2-3 min)
+```
+
+> **⚡ Optimización**: Los tests han sido optimizados para desarrollo rápido. Ver [README_TESTING.md](README_TESTING.md) para detalles completos de la optimización.
+
 ## Prerequisites
 
 - Java 21
@@ -20,6 +41,10 @@ docker-compose up -d postgres redis
 ### 2. Run the Application
 
 ```bash
+# Desarrollo rápido (recomendado)
+./test-scripts.sh build && mvn spring-boot:run
+
+# O método tradicional
 mvn spring-boot:run
 ```
 
@@ -28,14 +53,18 @@ The application will be available at `http://localhost:8080/api`
 ### 3. Run Tests
 
 ```bash
-# Run all tests
-mvn test
+# Tests rápidos para desarrollo diario (8 segundos)
+./test-scripts.sh fast
 
-# Run only unit tests
-mvn test -Dtest="*Test"
+# Build completo optimizado (8 segundos)
+./test-scripts.sh install
 
-# Run only integration tests
-mvn test -Dtest="*IT"
+# Tests completos para CI (2-3 minutos)
+./test-scripts.sh ci
+
+# Métodos tradicionales (más lentos)
+mvn test                    # Todos los tests (~5+ minutos)
+mvn test -Dtest="AuthenticationPropertyTest"  # Test específico
 ```
 
 ## Development Setup
@@ -66,12 +95,52 @@ docker-compose down
 
 ### Testing Infrastructure
 
-The project includes comprehensive testing setup:
+The project includes comprehensive testing setup with a hybrid approach:
 
-- **Unit Tests**: JUnit 5 for standard unit testing
-- **Integration Tests**: Testcontainers with PostgreSQL for database integration
-- **Property-Based Tests**: QuickTheories for property-based testing
-- **Test Profiles**: Separate configuration for test environment
+#### Test Configuration
+- **H2 Tests (Default)**: Fast in-memory database for rapid development feedback
+- **Testcontainers Tests**: PostgreSQL containers for production parity (Linux/CI)
+- **Property-Based Tests**: QuickTheories for comprehensive property validation
+
+#### Test Profiles
+- `test` - H2 in-memory database (fast, no Docker required)
+- `testcontainers` - PostgreSQL via Testcontainers (production parity)
+
+#### Running Tests
+
+```bash
+# 🚀 MÉTODOS OPTIMIZADOS (RECOMENDADOS)
+
+# Tests rápidos para desarrollo (8 segundos)
+./test-scripts.sh fast
+
+# Build completo optimizado (8 segundos)  
+./test-scripts.sh install
+
+# Property tests rápidos (30 segundos)
+./test-scripts.sh quick-property
+
+# Tests completos para CI (2-3 minutos)
+./test-scripts.sh ci
+
+# 📝 MÉTODOS TRADICIONALES (MÁS LENTOS)
+
+# Todos los tests con configuración original (~5+ minutos)
+mvn test
+
+# Tests específicos
+mvn test -Dtest="AuditTrailPropertyTest"
+
+# Testcontainers (PostgreSQL - Linux/CI)
+mvn test -Dspring.profiles.active=testcontainers -Dtestcontainers.enabled=true
+```
+
+> **💡 Tip**: Usa `./test-scripts.sh install` para desarrollo diario. Es 40x más rápido que `mvn clean install` tradicional.
+
+#### Known Issues
+- Testcontainers may have connectivity issues on macOS with Docker Desktop
+- See `TESTCONTAINERS_TROUBLESHOOTING.md` for details and workarounds
+- H2 tests provide excellent coverage for daily development
 
 ### Project Structure
 

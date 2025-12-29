@@ -3,6 +3,7 @@ package com.issuetracker.service;
 import com.issuetracker.base.BaseTestcontainersTest;
 import com.issuetracker.entity.User;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.quicktheories.QuickTheory;
 import org.quicktheories.core.Gen;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import static org.quicktheories.generators.SourceDSL.*;
  * To run: mvn test -Dtest="AuthenticationTestcontainersTest"
  * Note: Requires Docker to be available
  */
+// @EnabledIfSystemProperty(named = "testcontainers.enabled", matches = "true") // COMENTADO - Test habilitado por defecto
 class AuthenticationTestcontainersTest extends BaseTestcontainersTest {
 
     private static final QuickTheory qt = QuickTheory.qt();

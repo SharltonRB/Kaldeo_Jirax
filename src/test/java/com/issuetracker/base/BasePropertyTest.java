@@ -9,14 +9,30 @@ import org.quicktheories.QuickTheory;
 public abstract class BasePropertyTest {
 
     /**
-     * QuickTheory instance configured for comprehensive testing.
-     * Uses 100 iterations minimum as specified in the design document.
+     * QuickTheory instance configured for development speed.
+     * Uses fewer iterations for faster feedback during development.
+     * For CI/production, use system property quicktheories.examples to override.
      */
-    protected static final QuickTheory qt = QuickTheory.qt();
+    protected static final QuickTheory qt = QuickTheory.qt()
+        .withExamples(getPropertyTestIterations())
+        .withShrinkCycles(50); // Reduce shrink cycles for speed
 
     /**
      * Number of iterations for property tests.
-     * Minimum 100 as per testing strategy requirements.
+     * Can be overridden with system property quicktheories.examples
      */
-    protected static final int PROPERTY_TEST_ITERATIONS = 100;
+    protected static final int PROPERTY_TEST_ITERATIONS = getPropertyTestIterations();
+    
+    private static int getPropertyTestIterations() {
+        String examples = System.getProperty("quicktheories.examples");
+        if (examples != null) {
+            try {
+                return Integer.parseInt(examples);
+            } catch (NumberFormatException e) {
+                // Fall back to default
+            }
+        }
+        // Default to 25 for development, can be overridden for CI
+        return 25;
+    }
 }

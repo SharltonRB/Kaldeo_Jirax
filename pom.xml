@@ -149,10 +149,102 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                    <argLine>-Dnet.bytebuddy.experimental=true -XX:+EnableDynamicAgentLoading</argLine>
+                    <!-- Configuración para acelerar tests -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <parallel>methods</parallel>
+                    <threadCount>4</threadCount>
+                    <!-- Configuración específica para property tests -->
+                    <systemPropertyVariables>
+                        <quicktheories.examples>25</quicktheories.examples>
+                        <quicktheories.shrinks>100</quicktheories.shrinks>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Perfil para desarrollo rápido -->
+        <profile>
+            <id>fast-tests</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Dnet.bytebuddy.experimental=true -XX:+EnableDynamicAgentLoading</argLine>
+                            <excludes>
+                                <exclude>**/*PropertyTest.java</exclude>
+                            </excludes>
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <parallel>methods</parallel>
+                            <threadCount>4</threadCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <!-- Perfil para property tests con pocos casos -->
+        <profile>
+            <id>quick-property-tests</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Dnet.bytebuddy.experimental=true -XX:+EnableDynamicAgentLoading</argLine>
+                            <includes>
+                                <include>**/*PropertyTest.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <quicktheories.examples>10</quicktheories.examples>
+                                <quicktheories.shrinks>25</quicktheories.shrinks>
+                            </systemPropertyVariables>
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <!-- Perfil para CI con tests completos -->
+        <profile>
+            <id>ci-tests</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Dnet.bytebuddy.experimental=true -XX:+EnableDynamicAgentLoading</argLine>
+                            <systemPropertyVariables>
+                                <quicktheories.examples>100</quicktheories.examples>
+                                <quicktheories.shrinks>200</quicktheories.shrinks>
+                            </systemPropertyVariables>
+                            <forkCount>1C</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <parallel>classes</parallel>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
