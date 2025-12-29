@@ -1,5 +1,6 @@
 package com.issuetracker.base;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -8,6 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.io.File;
 
 /**
  * Base class for integration tests with Testcontainers PostgreSQL.
@@ -28,12 +32,30 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Transactional
 public abstract class BaseTestcontainersTest {
 
+    static {
+        // Configurar Docker ANTES de que Testcontainers intente conectarse
+        configureDockerForMacOS();
+    }
+
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
+            DockerImageName.parse("postgres:15-alpine"))
             .withDatabaseName("testdb")
             .withUsername("test")
             .withPassword("test")
             .withReuse(true);
+
+    @BeforeAll
+    static void setupDocker() {
+        // Verificar conexión
+        try {
+            System.out.println("🐳 Docker Host: " + System.getProperty("DOCKER_HOST"));
+            System.out.println("✅ PostgreSQL Container Started: " + postgres.getJdbcUrl());
+        } catch (Exception e) {
+            System.err.println("❌ Error starting containers: " + e.getMessage());
+            throw e;
+        }
+    }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -43,5 +65,43 @@ public abstract class BaseTestcontainersTest {
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         
         System.out.println("✅ Using Testcontainers PostgreSQL: " + postgres.getJdbcUrl());
+    }
+
+    /**
+     * Configure Docker socket for macOS Docker Desktop compatibility.
+     * This fixes the "Could not find a valid Docker environment" issue on macOS.
+     */
+    private static void configureDockerForMacOS() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        
+        if (osName.contains("mac")) {
+            System.out.println("🍎 Detected macOS - Configuring Docker socket");
+            
+            // Primero intenta con la ubicación estándar del enlace simbólico
+            String dockerHost = "unix:///var/run/docker.sock";
+            
+            // Si no existe, prueba otras ubicaciones
+            String homeDir = System.getProperty("user.home");
+            String[] socketPaths = {
+                "/var/run/docker.sock",
+                homeDir + "/.docker/run/docker.sock",
+                homeDir + "/Library/Containers/com.docker.docker/Data/docker.sock"
+            };
+            
+            for (String socketPath : socketPaths) {
+                File socket = new File(socketPath);
+                if (socket.exists()) {
+                    dockerHost = "unix://" + socketPath;
+                    System.out.println("✅ Found Docker socket at: " + socketPath);
+                    break;
+                }
+            }
+            
+            System.setProperty("DOCKER_HOST", dockerHost);
+            System.setProperty("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", dockerHost.replace("unix://", ""));
+            
+            // Configuración adicional para Testcontainers
+            System.setProperty("testcontainers.reuse.enable", "true");
+        }
     }
 }
