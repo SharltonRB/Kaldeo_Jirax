@@ -134,4 +134,16 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     @Query("SELECT a FROM AuditLog a WHERE a.issue.user = :user " +
            "ORDER BY a.createdAt DESC")
     Page<AuditLog> findAuditLogsOnUserIssues(@Param("user") User user, Pageable pageable);
+
+    /**
+     * Finds audit logs for a specific issue owned by a user.
+     *
+     * @param issueId the issue ID
+     * @param user the issue owner
+     * @return list of audit logs ordered by creation time
+     */
+    @Query("SELECT a FROM AuditLog a WHERE a.issue.id = :issueId AND a.issue.user = :user " +
+           "ORDER BY a.createdAt ASC")
+    List<AuditLog> findByIssueIdAndIssueUserOrderByCreatedAtAsc(@Param("issueId") Long issueId, 
+                                                                @Param("user") User user);
 }

@@ -165,16 +165,44 @@ public class AuditService {
     }
 
     /**
-     * Retrieves audit history for an issue by ID.
+     * Retrieves audit history for an issue by ID with user isolation.
      *
      * @param issueId the issue ID
-     * @return list of audit logs in chronological order
+     * @param user the user requesting the history (for security validation)
+     * @return list of audit log DTOs in chronological order
      */
     @Transactional(readOnly = true)
-    public List<AuditLog> getIssueHistory(Long issueId) {
-        // This method would need the issue to be loaded first
-        // For now, we'll keep it simple and use the other method
-        throw new UnsupportedOperationException("Use getIssueHistory(Issue) instead");
+    public List<com.issuetracker.dto.AuditLogDto> getIssueHistory(Long issueId, User user) {
+        List<AuditLog> auditLogs = auditLogRepository.findByIssueIdAndIssueUserOrderByCreatedAtAsc(issueId, user);
+        return auditLogs.stream()
+                .map(this::convertToDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Converts an AuditLog entity to AuditLogDto.
+     *
+     * @param auditLog the audit log entity
+     * @return the audit log DTO
+     */
+    private com.issuetracker.dto.AuditLogDto convertToDto(AuditLog auditLog) {
+        com.issuetracker.dto.AuditLogDto dto = new com.issuetracker.dto.AuditLogDto(
+                auditLog.getId(),
+                auditLog.getAction(),
+                auditLog.getDetails(),
+                auditLog.getCreatedAt()
+        );
+
+        // Set user information
+        dto.setUserId(auditLog.getUser().getId());
+        dto.setUserName(auditLog.getUser().getName());
+        dto.setUserEmail(auditLog.getUser().getEmail());
+
+        // Set issue information
+        dto.setIssueId(auditLog.getIssue().getId());
+        dto.setIssueTitle(auditLog.getIssue().getTitle());
+
+        return dto;
     }
 
     /**
