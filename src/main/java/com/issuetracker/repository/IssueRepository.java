@@ -199,4 +199,86 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
      * @param user issue owner
      */
     void deleteByIdAndUser(Long id, User user);
+
+    // Epic hierarchy methods
+
+    /**
+     * Finds all epic issues (issues without parent) for a user.
+     *
+     * @param user the issue owner
+     * @param pageable pagination information
+     * @return page of epic issues
+     */
+    Page<Issue> findByUserAndParentIssueIsNullOrderByCreatedAtDesc(User user, Pageable pageable);
+
+    /**
+     * Finds all epic issues (issues without parent) for a user without pagination.
+     *
+     * @param user the issue owner
+     * @return list of epic issues
+     */
+    List<Issue> findByUserAndParentIssueIsNullOrderByCreatedAtDesc(User user);
+
+    /**
+     * Finds child issues of a specific parent issue.
+     *
+     * @param parentIssue the parent issue
+     * @param user the issue owner
+     * @param pageable pagination information
+     * @return page of child issues
+     */
+    Page<Issue> findByParentIssueAndUserOrderByCreatedAtDesc(Issue parentIssue, User user, Pageable pageable);
+
+    /**
+     * Finds child issues of a specific parent issue without pagination.
+     *
+     * @param parentIssue the parent issue
+     * @param user the issue owner
+     * @return list of child issues
+     */
+    List<Issue> findByParentIssueAndUserOrderByCreatedAtDesc(Issue parentIssue, User user);
+
+    /**
+     * Counts child issues for a specific parent issue.
+     *
+     * @param parentIssue the parent issue
+     * @param user the issue owner
+     * @return count of child issues
+     */
+    long countByParentIssueAndUser(Issue parentIssue, User user);
+
+    /**
+     * Counts epic issues (issues without parent) for a user.
+     *
+     * @param user the issue owner
+     * @return count of epic issues
+     */
+    long countByUserAndParentIssueIsNull(User user);
+
+    /**
+     * Finds issues by parent issue ID and user.
+     *
+     * @param parentIssueId the parent issue ID
+     * @param user the issue owner
+     * @return list of child issues
+     */
+    @Query("SELECT i FROM Issue i WHERE i.parentIssue.id = :parentIssueId AND i.user = :user ORDER BY i.createdAt DESC")
+    List<Issue> findByParentIssueIdAndUser(@Param("parentIssueId") Long parentIssueId, @Param("user") User user);
+
+    /**
+     * Finds issues that are not epics (have a parent issue) for a user.
+     *
+     * @param user the issue owner
+     * @param pageable pagination information
+     * @return page of non-epic issues
+     */
+    Page<Issue> findByUserAndParentIssueIsNotNullOrderByCreatedAtDesc(User user, Pageable pageable);
+
+    /**
+     * Counts issues that are not epics (have a parent issue) for a user.
+     *
+     * @param user the issue owner
+     * @return count of non-epic issues
+     */
+    long countByUserAndParentIssueIsNotNull(User user);
 }

@@ -55,6 +55,12 @@ public class IssueDto {
     
     private List<LabelDto> labels;
     private Long commentCount;
+    
+    // Epic hierarchy information
+    private Long parentIssueId;
+    private String parentIssueTitle;
+    private boolean isEpic;
+    private Long childIssueCount;
 
     // Constructors
     public IssueDto() {}
@@ -206,6 +212,38 @@ public class IssueDto {
 
     public void setCommentCount(Long commentCount) {
         this.commentCount = commentCount;
+    }
+
+    public Long getParentIssueId() {
+        return parentIssueId;
+    }
+
+    public void setParentIssueId(Long parentIssueId) {
+        this.parentIssueId = parentIssueId;
+    }
+
+    public String getParentIssueTitle() {
+        return parentIssueTitle;
+    }
+
+    public void setParentIssueTitle(String parentIssueTitle) {
+        this.parentIssueTitle = parentIssueTitle;
+    }
+
+    public boolean isEpic() {
+        return isEpic;
+    }
+
+    public void setEpic(boolean epic) {
+        isEpic = epic;
+    }
+
+    public Long getChildIssueCount() {
+        return childIssueCount;
+    }
+
+    public void setChildIssueCount(Long childIssueCount) {
+        this.childIssueCount = childIssueCount;
     }
 
     @Override

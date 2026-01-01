@@ -26,7 +26,7 @@ import java.util.List;
  * Handles comment CRUD operations with proper authorization and validation.
  */
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping("/comments")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class CommentController {
 

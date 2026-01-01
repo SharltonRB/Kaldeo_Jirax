@@ -49,6 +49,10 @@ public class Issue {
     @JoinColumn(name = "issue_type_id", nullable = false)
     private IssueType issueType;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_issue_id")
+    private Issue parentIssue;
+
     @NotBlank
     @Size(max = 255)
     @Column(nullable = false)
@@ -95,6 +99,9 @@ public class Issue {
     @OneToMany(mappedBy = "issue", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "parentIssue", cascade = CascadeType.ALL)
+    private List<Issue> childIssues = new ArrayList<>();
+
     @OneToMany(mappedBy = "issue", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AuditLog> auditLogs = new ArrayList<>();
 
@@ -108,6 +115,16 @@ public class Issue {
         this.title = title;
         this.description = description;
         this.priority = priority;
+    }
+
+    public Issue(User user, Project project, IssueType issueType, String title, String description, Priority priority, Issue parentIssue) {
+        this.user = user;
+        this.project = project;
+        this.issueType = issueType;
+        this.title = title;
+        this.description = description;
+        this.priority = priority;
+        this.parentIssue = parentIssue;
     }
 
     // Getters and Setters
@@ -149,6 +166,14 @@ public class Issue {
 
     public void setIssueType(IssueType issueType) {
         this.issueType = issueType;
+    }
+
+    public Issue getParentIssue() {
+        return parentIssue;
+    }
+
+    public void setParentIssue(Issue parentIssue) {
+        this.parentIssue = parentIssue;
     }
 
     public String getTitle() {
@@ -223,12 +248,71 @@ public class Issue {
         this.comments = comments;
     }
 
+    public List<Issue> getChildIssues() {
+        return childIssues;
+    }
+
+    public void setChildIssues(List<Issue> childIssues) {
+        this.childIssues = childIssues;
+    }
+
     public List<AuditLog> getAuditLogs() {
         return auditLogs;
     }
 
     public void setAuditLogs(List<AuditLog> auditLogs) {
         this.auditLogs = auditLogs;
+    }
+
+    // Utility methods for epic hierarchy
+    
+    /**
+     * Checks if this issue is an epic (has no parent).
+     * @return true if this is an epic issue
+     */
+    public boolean isEpic() {
+        return this.parentIssue == null;
+    }
+    
+    /**
+     * Checks if this issue has child issues.
+     * @return true if this issue has children
+     */
+    public boolean hasChildren() {
+        return !this.childIssues.isEmpty();
+    }
+    
+    /**
+     * Gets the root epic for this issue.
+     * @return the root epic, or this issue if it's already an epic
+     */
+    public Issue getRootEpic() {
+        if (this.parentIssue == null) {
+            return this; // This is already an epic
+        }
+        return this.parentIssue.getRootEpic();
+    }
+    
+    /**
+     * Adds a child issue to this epic.
+     * @param childIssue the child issue to add
+     * @throws IllegalStateException if this issue is not an epic
+     */
+    public void addChildIssue(Issue childIssue) {
+        if (!this.isEpic()) {
+            throw new IllegalStateException("Only epic issues can have children");
+        }
+        childIssue.setParentIssue(this);
+        this.childIssues.add(childIssue);
+    }
+    
+    /**
+     * Removes a child issue from this epic.
+     * @param childIssue the child issue to remove
+     */
+    public void removeChildIssue(Issue childIssue) {
+        childIssue.setParentIssue(null);
+        this.childIssues.remove(childIssue);
     }
 
     @Override

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  * Handles user registration, login, and token refresh.
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class AuthController {
 
@@ -39,8 +39,12 @@ public class AuthController {
             AuthResponse response = authenticationService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
+            System.err.println("IllegalArgumentException in register: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception e) {
+            System.err.println("Exception in register: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

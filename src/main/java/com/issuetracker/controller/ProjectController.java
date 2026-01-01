@@ -24,7 +24,7 @@ import java.util.List;
  * Handles project CRUD operations with user isolation and pagination support.
  */
 @RestController
-@RequestMapping("/api/projects")
+@RequestMapping("/projects")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class ProjectController {
 
