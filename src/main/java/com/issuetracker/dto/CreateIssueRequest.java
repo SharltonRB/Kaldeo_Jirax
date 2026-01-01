@@ -2,6 +2,7 @@ package com.issuetracker.dto;
 
 import com.issuetracker.entity.Priority;
 import com.issuetracker.validation.ValidStoryPoints;
+import com.issuetracker.validation.ValidEpicHierarchy;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,8 +12,9 @@ import java.util.List;
 
 /**
  * Request DTO for creating a new issue.
- * Contains validation rules for issue creation.
+ * Contains validation rules for issue creation including epic hierarchy.
  */
+@ValidEpicHierarchy
 public class CreateIssueRequest {
 
     @NotBlank(message = "Issue title is required")
@@ -35,6 +37,8 @@ public class CreateIssueRequest {
     private Long issueTypeId;
 
     private Long sprintId;
+
+    private Long parentIssueId;
 
     private List<Long> labelIds;
 
@@ -104,6 +108,14 @@ public class CreateIssueRequest {
 
     public void setSprintId(Long sprintId) {
         this.sprintId = sprintId;
+    }
+
+    public Long getParentIssueId() {
+        return parentIssueId;
+    }
+
+    public void setParentIssueId(Long parentIssueId) {
+        this.parentIssueId = parentIssueId;
     }
 
     public List<Long> getLabelIds() {

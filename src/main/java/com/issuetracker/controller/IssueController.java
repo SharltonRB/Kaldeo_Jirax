@@ -25,7 +25,7 @@ import java.util.List;
  * Handles issue CRUD operations, status transitions, search and filtering capabilities.
  */
 @RestController
-@RequestMapping("/api/issues")
+@RequestMapping("/issues")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class IssueController {
 
@@ -272,5 +272,93 @@ public class IssueController {
         String email = authentication.getName();
         return userService.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found: " + email));
+    }
+
+    // Epic hierarchy endpoints
+
+    /**
+     * Gets all epic issues with pagination.
+     *
+     * @param pageable pagination parameters
+     * @return page of epic issue DTOs
+     */
+    @GetMapping("/epics")
+    public ResponseEntity<Page<IssueDto>> getEpics(
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        
+        User currentUser = getCurrentUser();
+        Page<IssueDto> epics = issueService.getEpics(currentUser, pageable);
+        return ResponseEntity.ok(epics);
+    }
+
+    /**
+     * Gets all epic issues without pagination.
+     *
+     * @return list of all epic issue DTOs
+     */
+    @GetMapping("/epics/all")
+    public ResponseEntity<List<IssueDto>> getAllEpics() {
+        User currentUser = getCurrentUser();
+        List<IssueDto> epics = issueService.getAllEpics(currentUser);
+        return ResponseEntity.ok(epics);
+    }
+
+    /**
+     * Gets child issues of a specific epic with pagination.
+     *
+     * @param epicId epic ID
+     * @param pageable pagination parameters
+     * @return page of child issue DTOs
+     */
+    @GetMapping("/epics/{epicId}/children")
+    public ResponseEntity<Page<IssueDto>> getEpicChildren(
+            @PathVariable Long epicId,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        
+        User currentUser = getCurrentUser();
+        Page<IssueDto> children = issueService.getEpicChildren(epicId, currentUser, pageable);
+        return ResponseEntity.ok(children);
+    }
+
+    /**
+     * Gets all child issues of a specific epic without pagination.
+     *
+     * @param epicId epic ID
+     * @return list of child issue DTOs
+     */
+    @GetMapping("/epics/{epicId}/children/all")
+    public ResponseEntity<List<IssueDto>> getAllEpicChildren(@PathVariable Long epicId) {
+        User currentUser = getCurrentUser();
+        List<IssueDto> children = issueService.getAllEpicChildren(epicId, currentUser);
+        return ResponseEntity.ok(children);
+    }
+
+    /**
+     * Moves an issue to a different epic.
+     *
+     * @param issueId issue ID
+     * @param epicId target epic ID
+     * @return updated issue DTO
+     */
+    @PutMapping("/{issueId}/move-to-epic/{epicId}")
+    public ResponseEntity<IssueDto> moveIssueToEpic(
+            @PathVariable Long issueId,
+            @PathVariable Long epicId) {
+        
+        User currentUser = getCurrentUser();
+        IssueDto issue = issueService.moveIssueToEpic(issueId, epicId, currentUser);
+        return ResponseEntity.ok(issue);
+    }
+
+    /**
+     * Gets epic statistics for the current user.
+     *
+     * @return epic statistics
+     */
+    @GetMapping("/epics/stats")
+    public ResponseEntity<EpicStatisticsDto> getEpicStatistics() {
+        User currentUser = getCurrentUser();
+        EpicStatisticsDto stats = issueService.getEpicStatistics(currentUser);
+        return ResponseEntity.ok(stats);
     }
 }

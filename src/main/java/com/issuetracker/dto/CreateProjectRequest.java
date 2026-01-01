@@ -1,5 +1,6 @@
 package com.issuetracker.dto;
 
+import com.issuetracker.validation.SafeProjectName;
 import com.issuetracker.validation.ValidProjectKey;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -12,6 +13,7 @@ public class CreateProjectRequest {
 
     @NotBlank(message = "Project name is required")
     @Size(min = 1, max = 100, message = "Project name must be between 1 and 100 characters")
+    @SafeProjectName
     private String name;
 
     @NotBlank(message = "Project key is required")

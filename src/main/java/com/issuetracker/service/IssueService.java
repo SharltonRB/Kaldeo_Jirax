@@ -94,6 +94,9 @@ public class IssueService {
             issue.setLabels(labels);
         }
 
+        // Handle epic hierarchy
+        validateAndSetEpicHierarchy(issue, request.getParentIssueId(), user);
+
         Issue savedIssue = issueRepository.save(issue);
 
         // Create audit log
@@ -125,6 +128,7 @@ public class IssueService {
         Priority oldPriority = issue.getPriority();
         Integer oldStoryPoints = issue.getStoryPoints();
         Sprint oldSprint = issue.getSprint();
+        Issue oldParentIssue = issue.getParentIssue();
 
         // Update issue fields
         issue.setTitle(request.getTitle());
@@ -143,6 +147,12 @@ public class IssueService {
             issue.setSprint(sprint);
         } else if (request.getSprintId() == null) {
             issue.setSprint(null); // Remove from sprint
+        }
+
+        // Handle epic hierarchy changes
+        if (request.getParentIssueId() != null || 
+            (oldParentIssue != null && request.getParentIssueId() == null)) {
+            validateAndSetEpicHierarchy(issue, request.getParentIssueId(), user);
         }
 
         // Update labels if provided
@@ -177,6 +187,11 @@ public class IssueService {
             String oldSprintName = oldSprint != null ? oldSprint.getName() : "None";
             String newSprintName = updatedIssue.getSprint() != null ? updatedIssue.getSprint().getName() : "None";
             auditService.logFieldChange(updatedIssue, user, "sprint", oldSprintName, newSprintName);
+        }
+        if (!java.util.Objects.equals(oldParentIssue, updatedIssue.getParentIssue())) {
+            String oldParentName = oldParentIssue != null ? oldParentIssue.getTitle() : "None";
+            String newParentName = updatedIssue.getParentIssue() != null ? updatedIssue.getParentIssue().getTitle() : "None";
+            auditService.logFieldChange(updatedIssue, user, "parentEpic", oldParentName, newParentName);
         }
 
         logger.info("Updated issue '{}' (ID: {}) for user {}", 
@@ -382,6 +397,208 @@ public class IssueService {
         long commentCount = commentRepository.countByIssue(issue);
         dto.setCommentCount(commentCount);
 
+        // Set epic hierarchy information
+        if (issue.getParentIssue() != null) {
+            dto.setParentIssueId(issue.getParentIssue().getId());
+            dto.setParentIssueTitle(issue.getParentIssue().getTitle());
+            dto.setEpic(false);
+        } else {
+            dto.setEpic(true);
+        }
+
+        // Set child issue count for epics
+        if (issue.isEpic()) {
+            long childCount = issueRepository.countByParentIssueAndUser(issue, issue.getUser());
+            dto.setChildIssueCount(childCount);
+        } else {
+            dto.setChildIssueCount(0L);
+        }
+
         return dto;
+    }
+
+    // Epic hierarchy methods
+
+    /**
+     * Validates and sets the epic hierarchy for an issue.
+     *
+     * @param issue the issue to validate
+     * @param parentIssueId the parent issue ID (can be null for epics)
+     * @param user the user
+     * @throws IllegalArgumentException if hierarchy rules are violated
+     */
+    private void validateAndSetEpicHierarchy(Issue issue, Long parentIssueId, User user) {
+        boolean isEpicType = "EPIC".equals(issue.getIssueType().getName());
+
+        if (isEpicType) {
+            // Epic issues cannot have a parent
+            if (parentIssueId != null) {
+                throw new IllegalArgumentException("Epic issues cannot have a parent issue");
+            }
+            issue.setParentIssue(null);
+        } else {
+            // Non-epic issues MUST have a parent epic
+            if (parentIssueId == null) {
+                throw new IllegalArgumentException("Non-epic issues must be assigned to an epic");
+            }
+
+            Issue parentIssue = issueRepository.findByIdAndUser(parentIssueId, user)
+                    .orElseThrow(() -> ResourceNotFoundException.issue(parentIssueId));
+
+            // Validate parent is an epic
+            if (!parentIssue.isEpic()) {
+                throw new IllegalArgumentException("Parent issue must be an epic");
+            }
+
+            // Validate parent belongs to same project
+            if (!parentIssue.getProject().equals(issue.getProject())) {
+                throw new IllegalArgumentException("Parent epic must belong to the same project");
+            }
+
+            issue.setParentIssue(parentIssue);
+        }
+    }
+
+    /**
+     * Gets all epic issues for a user.
+     *
+     * @param user the user
+     * @param pageable pagination information
+     * @return page of epic issues
+     */
+    @Transactional(readOnly = true)
+    public Page<IssueDto> getEpics(User user, Pageable pageable) {
+        logger.debug("Retrieving epics for user {}", user.getId());
+
+        Page<Issue> epics = issueRepository.findByUserAndParentIssueIsNullOrderByCreatedAtDesc(user, pageable);
+        return epics.map(this::convertToDto);
+    }
+
+    /**
+     * Gets all epic issues for a user without pagination.
+     *
+     * @param user the user
+     * @return list of epic issues
+     */
+    @Transactional(readOnly = true)
+    public List<IssueDto> getAllEpics(User user) {
+        logger.debug("Retrieving all epics for user {}", user.getId());
+
+        List<Issue> epics = issueRepository.findByUserAndParentIssueIsNullOrderByCreatedAtDesc(user);
+        return epics.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Gets child issues of a specific epic.
+     *
+     * @param epicId the epic ID
+     * @param user the user
+     * @param pageable pagination information
+     * @return page of child issues
+     */
+    @Transactional(readOnly = true)
+    public Page<IssueDto> getEpicChildren(Long epicId, User user, Pageable pageable) {
+        logger.debug("Retrieving children of epic {} for user {}", epicId, user.getId());
+
+        Issue epic = issueRepository.findByIdAndUser(epicId, user)
+                .orElseThrow(() -> ResourceNotFoundException.issue(epicId));
+
+        if (!epic.isEpic()) {
+            throw new IllegalArgumentException("Issue is not an epic");
+        }
+
+        Page<Issue> children = issueRepository.findByParentIssueAndUserOrderByCreatedAtDesc(epic, user, pageable);
+        return children.map(this::convertToDto);
+    }
+
+    /**
+     * Gets child issues of a specific epic without pagination.
+     *
+     * @param epicId the epic ID
+     * @param user the user
+     * @return list of child issues
+     */
+    @Transactional(readOnly = true)
+    public List<IssueDto> getAllEpicChildren(Long epicId, User user) {
+        logger.debug("Retrieving all children of epic {} for user {}", epicId, user.getId());
+
+        Issue epic = issueRepository.findByIdAndUser(epicId, user)
+                .orElseThrow(() -> ResourceNotFoundException.issue(epicId));
+
+        if (!epic.isEpic()) {
+            throw new IllegalArgumentException("Issue is not an epic");
+        }
+
+        List<Issue> children = issueRepository.findByParentIssueAndUserOrderByCreatedAtDesc(epic, user);
+        return children.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Moves an issue to a different epic.
+     *
+     * @param issueId the issue ID
+     * @param newParentEpicId the new parent epic ID
+     * @param user the user
+     * @return updated issue DTO
+     */
+    public IssueDto moveIssueToEpic(Long issueId, Long newParentEpicId, User user) {
+        logger.debug("Moving issue {} to epic {} for user {}", issueId, newParentEpicId, user.getId());
+
+        Issue issue = issueRepository.findByIdAndUser(issueId, user)
+                .orElseThrow(() -> ResourceNotFoundException.issue(issueId));
+
+        if (issue.isEpic()) {
+            throw new IllegalArgumentException("Cannot move an epic issue to another epic");
+        }
+
+        Issue oldParent = issue.getParentIssue();
+        
+        Issue newParentEpic = issueRepository.findByIdAndUser(newParentEpicId, user)
+                .orElseThrow(() -> ResourceNotFoundException.issue(newParentEpicId));
+
+        if (!newParentEpic.isEpic()) {
+            throw new IllegalArgumentException("Target issue is not an epic");
+        }
+
+        // Validate same project
+        if (!newParentEpic.getProject().equals(issue.getProject())) {
+            throw new IllegalArgumentException("Target epic must belong to the same project");
+        }
+
+        issue.setParentIssue(newParentEpic);
+        Issue updatedIssue = issueRepository.save(issue);
+
+        // Create audit log
+        String details = String.format("Moved from epic '%s' to epic '%s'", 
+                                      oldParent != null ? oldParent.getTitle() : "None", 
+                                      newParentEpic.getTitle());
+        auditService.logFieldChange(updatedIssue, user, "parentEpic", 
+                                   oldParent != null ? oldParent.getTitle() : "None", 
+                                   newParentEpic.getTitle());
+
+        logger.info("Moved issue '{}' (ID: {}) to epic '{}' for user {}", 
+                   updatedIssue.getTitle(), updatedIssue.getId(), newParentEpic.getTitle(), user.getId());
+
+        return convertToDto(updatedIssue);
+    }
+
+    /**
+     * Gets epic statistics for a user.
+     *
+     * @param user the user
+     * @return epic statistics
+     */
+    @Transactional(readOnly = true)
+    public EpicStatisticsDto getEpicStatistics(User user) {
+        logger.debug("Calculating epic statistics for user {}", user.getId());
+
+        long totalEpics = issueRepository.countByUserAndParentIssueIsNull(user);
+        long totalChildIssues = issueRepository.countByUserAndParentIssueIsNotNull(user);
+
+        return new EpicStatisticsDto(totalEpics, totalChildIssues);
     }
 }

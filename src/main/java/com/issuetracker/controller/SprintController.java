@@ -26,7 +26,7 @@ import java.util.Optional;
  * Handles sprint CRUD operations, activation, completion, and planning endpoints.
  */
 @RestController
-@RequestMapping("/api/sprints")
+@RequestMapping("/sprints")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class SprintController {
 

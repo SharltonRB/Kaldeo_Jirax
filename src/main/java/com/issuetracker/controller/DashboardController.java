@@ -21,7 +21,7 @@ import java.util.Map;
  * with caching for performance optimization.
  */
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/dashboard")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class DashboardController {
 
@@ -142,6 +142,8 @@ public class DashboardController {
             "totalIssues", metrics.getIssueMetrics().getTotalIssues(),
             "backlogIssues", metrics.getIssueMetrics().getBacklogIssues(),
             "completedIssues", metrics.getIssueMetrics().getCompletedIssues(),
+            "totalEpics", metrics.getIssueMetrics().getTotalEpics(),
+            "totalChildIssues", metrics.getIssueMetrics().getTotalChildIssues(),
             "totalSprints", metrics.getSprintMetrics().getTotalSprints(),
             "activeSprint", metrics.getSprintMetrics().getActiveSprint() != null ? 
                            metrics.getSprintMetrics().getActiveSprint() : null,

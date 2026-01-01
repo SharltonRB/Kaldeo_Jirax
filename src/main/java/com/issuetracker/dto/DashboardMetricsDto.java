@@ -72,17 +72,23 @@ public class DashboardMetricsDto {
         private final Map<Priority, Long> issuesByPriority;
         private final long backlogIssues;
         private final long completedIssues;
+        private final long totalEpics;
+        private final long totalChildIssues;
 
         public IssueMetrics(long totalIssues, 
                            Map<IssueStatus, Long> issuesByStatus,
                            Map<Priority, Long> issuesByPriority,
                            long backlogIssues,
-                           long completedIssues) {
+                           long completedIssues,
+                           long totalEpics,
+                           long totalChildIssues) {
             this.totalIssues = totalIssues;
             this.issuesByStatus = issuesByStatus;
             this.issuesByPriority = issuesByPriority;
             this.backlogIssues = backlogIssues;
             this.completedIssues = completedIssues;
+            this.totalEpics = totalEpics;
+            this.totalChildIssues = totalChildIssues;
         }
 
         public long getTotalIssues() {
@@ -103,6 +109,14 @@ public class DashboardMetricsDto {
 
         public long getCompletedIssues() {
             return completedIssues;
+        }
+
+        public long getTotalEpics() {
+            return totalEpics;
+        }
+
+        public long getTotalChildIssues() {
+            return totalChildIssues;
         }
     }
 

@@ -124,8 +124,12 @@ public class DashboardService {
         long backlogIssues = issueRepository.countByUserAndStatus(user, IssueStatus.BACKLOG);
         long completedIssues = issueRepository.countByUserAndStatus(user, IssueStatus.DONE);
 
+        // Epic metrics
+        long totalEpics = issueRepository.countByUserAndParentIssueIsNull(user);
+        long totalChildIssues = issueRepository.countByUserAndParentIssueIsNotNull(user);
+
         return new DashboardMetricsDto.IssueMetrics(
-                totalIssues, issuesByStatus, issuesByPriority, backlogIssues, completedIssues);
+                totalIssues, issuesByStatus, issuesByPriority, backlogIssues, completedIssues, totalEpics, totalChildIssues);
     }
 
     /**

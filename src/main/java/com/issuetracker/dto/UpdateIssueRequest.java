@@ -27,6 +27,8 @@ public class UpdateIssueRequest {
 
     private Long sprintId;
 
+    private Long parentIssueId;
+
     private List<Long> labelIds;
 
     // Constructors
@@ -77,6 +79,14 @@ public class UpdateIssueRequest {
 
     public void setSprintId(Long sprintId) {
         this.sprintId = sprintId;
+    }
+
+    public Long getParentIssueId() {
+        return parentIssueId;
+    }
+
+    public void setParentIssueId(Long parentIssueId) {
+        this.parentIssueId = parentIssueId;
     }
 
     public List<Long> getLabelIds() {
