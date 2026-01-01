@@ -1,0 +1,56 @@
+# Multi-stage build para optimizar el tamaño de la imagen
+FROM maven:3.9.5-eclipse-temurin-21-alpine AS build
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de configuración de Maven
+COPY backend/pom.xml .
+
+# Descargar dependencias (se cachea si no cambia pom.xml)
+RUN mvn dependency:go-offline -B
+
+# Copiar código fuente
+COPY backend/src ./src
+
+# Construir aplicación
+RUN mvn clean package -DskipTests -B
+
+# Imagen final optimizada
+FROM eclipse-temurin:21-jre-alpine
+
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# Instalar herramientas necesarias
+RUN apk add --no-cache curl
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar JAR desde la etapa de build
+COPY --from=build /app/target/*.jar app.jar
+
+# Cambiar propietario de archivos
+RUN chown -R appuser:appgroup /app
+
+# Cambiar a usuario no-root
+USER appuser
+
+# Exponer puerto
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Comando de inicio con optimizaciones JVM
+ENTRYPOINT ["java", \
+    "-XX:+UseContainerSupport", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-XX:+UseG1GC", \
+    "-XX:+UseStringDeduplication", \
+    "-Djava.security.egd=file:/dev/./urandom", \
+    "-jar", \
+    "app.jar"]

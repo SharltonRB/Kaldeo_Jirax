@@ -1,200 +1,170 @@
 # Personal Issue Tracker
 
-A Jira-inspired personal project management application built with Spring Boot and React TypeScript.
+Una aplicación de gestión de proyectos personales inspirada en Jira, construida con Spring Boot y React TypeScript.
 
-## 🚀 Quick Start
+## 🏗️ Estructura del Proyecto
 
-### Fast Development Build (Recommended)
-```bash
-# Build completo optimizado en ~8 segundos
-./test-scripts.sh build
-
-# O usando Maven directamente
-mvn clean install -Pfast-tests
+```
+personal-issue-tracker/
+├── backend/                      # API Spring Boot
+├── frontend/                     # SPA React TypeScript
+├── infrastructure/               # Docker, K8s, Terraform
+├── docs/                        # Documentación
+├── scripts/                     # Scripts de automatización
+├── logs/                        # Logs de aplicación
+├── docker-compose.yml           # Servicios de desarrollo
+└── README.md                    # Este archivo
 ```
 
-### Testing Options
-```bash
-./test-scripts.sh help           # Ver todas las opciones disponibles
-./test-scripts.sh fast           # Tests rápidos sin property tests (8 seg)
-./test-scripts.sh install        # Build rápido recomendado (8 seg)
-./test-scripts.sh ci             # Tests completos para CI (2-3 min)
-```
+## 🚀 Inicio Rápido
 
-> **⚡ Optimización**: Los tests han sido optimizados para desarrollo rápido. Ver [README_TESTING.md](README_TESTING.md) para detalles completos de la optimización.
-
-## Prerequisites
-
+### Prerrequisitos
 - Java 21
 - Maven 3.8+
-- Docker and Docker Compose
-- Node.js 18+ (for frontend)
+- Node.js 18+
+- Docker y Docker Compose
 
-## Quick Start
-
-### 1. Start Development Database
+### 1. Configurar Entorno de Desarrollo
 
 ```bash
-docker-compose up -d postgres redis
+# Configurar backend
+./scripts/setup/setup-backend.sh
+
+# Configurar frontend
+./scripts/setup/setup-frontend.sh
 ```
 
-### 2. Run the Application
+### 2. Iniciar Servicios
 
 ```bash
-# Desarrollo rápido (recomendado)
-./test-scripts.sh build && mvn spring-boot:run
-
-# O método tradicional
-mvn spring-boot:run
-```
-
-The application will be available at `http://localhost:8080/api`
-
-### 3. Run Tests
-
-```bash
-# Tests rápidos para desarrollo diario (8 segundos)
-./test-scripts.sh fast
-
-# Build completo optimizado (8 segundos)
-./test-scripts.sh install
-
-# Tests completos para CI (2-3 minutos)
-./test-scripts.sh ci
-
-# Métodos tradicionales (más lentos)
-mvn test                    # Todos los tests (~5+ minutos)
-mvn test -Dtest="AuthenticationPropertyTest"  # Test específico
-```
-
-## Development Setup
-
-### Database Setup
-
-The application uses PostgreSQL for development and production. A Docker Compose file is provided for easy setup:
-
-```bash
-# Start all services (PostgreSQL + Redis)
+# Iniciar servicios de base de datos y cache
 docker-compose up -d
 
-# Start only PostgreSQL
-docker-compose up -d postgres
+# Iniciar backend (en otra terminal)
+cd backend && mvn spring-boot:run
 
-# View logs
-docker-compose logs -f postgres
+# Iniciar frontend (en otra terminal)
+cd frontend && npm run dev
+```
 
-# Stop services
+### 3. Acceder a las Aplicaciones
+
+- **Frontend**: http://localhost:5173
+- **API Backend**: http://localhost:8080/api
+- **Documentación API**: http://localhost:8080/api/swagger-ui.html
+
+## 🛠️ Desarrollo
+
+### Scripts de Construcción
+
+```bash
+# Construir todo
+./scripts/build.sh all
+
+# Construir componente específico
+./scripts/build.sh backend
+./scripts/build.sh frontend
+
+# Construcción limpia con tests
+./scripts/build.sh all --clean --test
+```
+
+### Testing
+
+```bash
+# Tests rápidos de desarrollo
+./scripts/test-scripts.sh fast
+
+# Suite completa de tests
+./scripts/test-scripts.sh ci
+
+# Solo tests del backend
+cd backend && mvn test -Pfast-tests
+
+# Solo tests del frontend
+cd frontend && npm run test:run
+```
+
+## 📁 Documentación de Módulos
+
+Cada módulo tiene su propia documentación detallada:
+
+- **[Backend](backend/README.md)** - Documentación de la API Spring Boot
+- **[Frontend](frontend/README.md)** - Documentación de la SPA React TypeScript
+- **[Infraestructura](infrastructure/README.md)** - Configuración de Docker y despliegue
+- **[Documentación](docs/README.md)** - Arquitectura, documentos de API, guías
+- **[Scripts](scripts/README.md)** - Scripts de automatización y construcción
+
+> 💡 **Consejo**: Haz clic en cualquier carpeta en GitHub para ver su README específico con información detallada sobre ese módulo.
+
+## 🐳 Docker
+
+### Desarrollo
+```bash
+# Iniciar todos los servicios
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Detener servicios
 docker-compose down
 ```
 
-### Environment Profiles
+### Construcción para Producción
+```bash
+# Construir imagen del backend
+docker build -f infrastructure/docker/Dockerfile.backend -t personal-issue-tracker-backend .
 
-- `dev` - Development profile (default)
-- `test` - Testing profile with H2 in-memory database
-- `prod` - Production profile
+# Construir imagen del frontend
+docker build -f infrastructure/docker/Dockerfile.frontend -t personal-issue-tracker-frontend .
+```
 
-### Testing Infrastructure
+## 📚 Documentación
 
-The project includes comprehensive testing setup with a hybrid approach:
+La documentación completa está disponible en el directorio `docs/`:
 
-#### Test Configuration
-- **H2 Tests (Default)**: Fast in-memory database for rapid development feedback
-- **Testcontainers Tests**: PostgreSQL containers for production parity (Linux/CI)
-- **Property-Based Tests**: QuickTheories for comprehensive property validation
+- **[Documentación de API](docs/api/)** - Endpoints de la API REST
+- **[Arquitectura](docs/architecture/)** - Diseño del sistema y patrones
+- **[Guía de Desarrollo](docs/development/)** - Flujos de trabajo de desarrollo
+- **[Estrategia de Testing](docs/testing/)** - Enfoques y herramientas de testing
+- **[Guía de Despliegue](docs/deployment/)** - Despliegue en producción
 
-#### Test Profiles
-- `test` - H2 in-memory database (fast, no Docker required)
-- `testcontainers` - PostgreSQL via Testcontainers (production parity)
+## 🔧 Configuración
 
-#### Running Tests
+### Variables de Entorno
 
 ```bash
-# 🚀 MÉTODOS OPTIMIZADOS (RECOMENDADOS)
-
-# Tests rápidos para desarrollo (8 segundos)
-./test-scripts.sh fast
-
-# Build completo optimizado (8 segundos)  
-./test-scripts.sh install
-
-# Property tests rápidos (30 segundos)
-./test-scripts.sh quick-property
-
-# Tests completos para CI (2-3 minutos)
-./test-scripts.sh ci
-
-# 📝 MÉTODOS TRADICIONALES (MÁS LENTOS)
-
-# Todos los tests con configuración original (~5+ minutos)
-mvn test
-
-# Tests específicos
-mvn test -Dtest="AuditTrailPropertyTest"
-
-# Testcontainers (PostgreSQL - Linux/CI)
-mvn test -Dspring.profiles.active=testcontainers -Dtestcontainers.enabled=true
-```
-
-> **💡 Tip**: Usa `./test-scripts.sh install` para desarrollo diario. Es 40x más rápido que `mvn clean install` tradicional.
-
-#### Known Issues
-- Testcontainers may have connectivity issues on macOS with Docker Desktop
-- See `TESTCONTAINERS_TROUBLESHOOTING.md` for details and workarounds
-- H2 tests provide excellent coverage for daily development
-
-### Project Structure
-
-```
-src/
-├── main/java/com/issuetracker/
-│   ├── config/          # Configuration classes
-│   ├── controller/      # REST API controllers
-│   ├── service/         # Business service layer
-│   ├── repository/      # Data access layer
-│   ├── entity/          # JPA entities
-│   ├── dto/             # Data Transfer Objects
-│   └── exception/       # Custom exceptions
-├── main/resources/
-│   ├── application*.yml # Configuration files
-│   └── db/migration/    # Flyway database migrations
-└── test/java/com/issuetracker/
-    ├── base/            # Base test classes
-    ├── config/          # Test configuration
-    └── testcontainers/  # Testcontainer utilities
-```
-
-## Configuration
-
-### Environment Variables
-
-For production deployment, set the following environment variables:
-
-```bash
-DATABASE_URL=jdbc:postgresql://localhost:5432/issue_tracker_prod
-DB_USERNAME=your_db_username
-DB_PASSWORD=your_db_password
+# Backend
+DATABASE_URL=jdbc:postgresql://localhost:5432/issue_tracker_dev
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
 JWT_SECRET=your_jwt_secret_key
 REDIS_HOST=localhost
 REDIS_PORT=6379
+
+# Frontend
+VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-### JWT Configuration
+## 🚀 Despliegue
 
-The application uses JWT for authentication. Configure the following properties:
+Ver [documentación de despliegue](docs/deployment/) para guías detalladas de despliegue en diferentes entornos.
 
-- `jwt.secret`: Secret key for JWT signing (use environment variable in production)
-- `jwt.expiration`: Token expiration time in milliseconds
-- `jwt.refresh-expiration`: Refresh token expiration time in milliseconds
+## 🤝 Contribuir
 
-## API Documentation
+1. Seguir la estructura y convenciones del proyecto
+2. Actualizar documentación al hacer cambios
+3. Ejecutar tests antes de enviar cambios
+4. Usar los scripts proporcionados para consistencia
 
-Once the application is running, API documentation is available at:
-- Swagger UI: `http://localhost:8080/api/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/api/v3/api-docs`
+## 📄 Licencia
 
-## Health Checks
+Este proyecto es para uso educativo y personal.
 
-Health check endpoints are available at:
-- Application health: `http://localhost:8080/api/actuator/health`
-- Application info: `http://localhost:8080/api/actuator/info`
-- Metrics: `http://localhost:8080/api/actuator/metrics`
+---
+
+## 🌐 Versiones de Idioma
+
+- **English**: [README.en.md](README.en.md)
+- **Español**: [README.md](README.md)

@@ -1,0 +1,53 @@
+# Multi-stage build para optimizar el tamaño de la imagen
+FROM node:20-alpine AS build
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de configuración de npm
+COPY frontend/package*.json ./
+
+# Instalar dependencias (se cachea si no cambian package files)
+RUN npm ci --only=production
+
+# Copiar código fuente
+COPY frontend/ .
+
+# Construir aplicación para producción
+RUN npm run build
+
+# Imagen final con nginx
+FROM nginx:1.25-alpine
+
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# Copiar archivos construidos
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copiar configuración personalizada de nginx
+COPY infrastructure/docker/nginx.conf /etc/nginx/nginx.conf
+
+# Cambiar propietario de archivos necesarios
+RUN chown -R appuser:appgroup /usr/share/nginx/html && \
+    chown -R appuser:appgroup /var/cache/nginx && \
+    chown -R appuser:appgroup /var/log/nginx && \
+    chown -R appuser:appgroup /etc/nginx/conf.d
+
+# Crear directorio para PID de nginx
+RUN mkdir -p /var/run/nginx && \
+    chown -R appuser:appgroup /var/run/nginx
+
+# Cambiar a usuario no-root
+USER appuser
+
+# Exponer puerto
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
+
+# Comando de inicio
+CMD ["nginx", "-g", "daemon off;"]

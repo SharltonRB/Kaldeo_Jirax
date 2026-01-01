@@ -183,95 +183,134 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - Add caching for performance optimization
     - _Requirements: 8.1, 8.4_
 
-- [ ] 10. Frontend Project Setup
-  - [ ] 10.1 Create React TypeScript project
+- [x] 10. Frontend Project Setup and Integration
+  - [x] 10.1 Create React TypeScript project with existing frontend code
+    - Migrate existing React frontend code to proper Vite project structure
     - Set up Vite with TypeScript, TailwindCSS, and React Router
     - Configure ESLint, Prettier, and testing frameworks
+    - Install additional dependencies: Axios, React Query, date-fns
     - _Requirements: 19.1, 19.2_
+    - _Note: Frontend code already exists and is fully functional with mock data_
 
-  - [ ] 10.2 Set up project structure and base components
-    - Create feature-based folder structure
-    - Implement base UI components (Button, Input, Modal, etc.)
-    - Set up React Query for state management
+  - [x] 10.2 Set up API integration infrastructure
+    - Create HTTP client with Axios and interceptors for JWT tokens
+    - Implement base API service with error handling and request/response interceptors
+    - Set up React Query for server state management and caching
+    - Create TypeScript interfaces matching backend DTOs
     - _Requirements: 19.1_
 
-  - [ ] 10.3 Configure authentication context and routing
-    - Implement AuthProvider and protected routes
-    - Set up JWT token storage and refresh logic
+  - [x] 10.3 Create data mappers and type adapters
+    - Implement mappers between frontend types and backend DTOs
+    - Handle enum differences (SELECTED ↔ SELECTED_FOR_DEVELOPMENT)
+    - Create date utility functions for Instant ↔ Date conversions
+    - Implement ID conversion utilities (string ↔ Long)
     - _Requirements: 1.2, 1.3_
 
-- [ ] 11. Authentication UI
-  - [ ] 11.1 Create login and registration forms
-    - Implement form validation with immediate feedback
-    - Add loading states and error handling
+- [ ] 11. Authentication Integration
+  - [ ] 11.1 Implement API authentication services
+    - Create AuthService with login, register, and refresh methods
+    - Integrate with backend /auth endpoints
+    - Implement secure token storage (localStorage with encryption)
+    - Add automatic token refresh logic
     - _Requirements: 1.1, 1.2, 1.4, 19.4_
 
-  - [ ] 11.2 Write frontend validation tests
-    - Test form validation and error display
+  - [ ] 11.2 Adapt existing authentication UI components
+    - Connect existing login/register forms to real API endpoints
+    - Implement proper error handling and validation feedback
+    - Add loading states and success/error notifications
+    - Test authentication flow end-to-end
     - _Requirements: 19.4_
 
-  - [ ] 11.3 Implement authentication flow
-    - Connect forms to backend authentication APIs
-    - Handle token storage and automatic login
+  - [ ] 11.3 Update authentication context and routing
+    - Modify existing AuthProvider to use real authentication
+    - Implement protected routes with proper token validation
+    - Add automatic logout on token expiration
+    - Handle authentication errors gracefully
     - _Requirements: 1.2, 1.3_
 
-- [ ] 12. Core UI Components
-  - [ ] 12.1 Create project management interface
-    - Implement project list, create, and edit forms
-    - Add project selection and navigation
+- [ ] 12. Core Data Integration
+  - [ ] 12.1 Implement project management API integration
+    - Create ProjectService with full CRUD operations
+    - Connect existing project UI components to real backend APIs
+    - Implement pagination, search, and filtering
+    - Add proper error handling and loading states
+    - Handle project deletion with cascade confirmation
     - _Requirements: 2.1, 2.2, 2.4_
 
-  - [ ] 12.2 Create issue management interface
-    - Implement issue list with filtering and search
-    - Create issue creation and editing forms
+  - [ ] 12.2 Implement issue management API integration
+    - Create IssueService with complete CRUD and workflow operations
+    - Connect existing issue UI components to backend APIs
+    - Implement Epic-Issue hierarchy with proper parent-child relationships
+    - Handle issue status transitions with backend validation
+    - Add search, filtering, and pagination for issues
     - _Requirements: 3.1, 3.2, 3.4, 3.5_
 
-  - [ ] 12.3 Implement Kanban board
-    - Create drag-and-drop interface for issue status changes
-    - Add real-time updates via WebSocket or polling
+  - [ ] 12.3 Integrate Kanban board with real-time updates
+    - Connect existing drag-and-drop Kanban to backend status updates
+    - Implement optimistic updates with rollback on failure
+    - Add real-time synchronization (polling or WebSocket)
+    - Handle concurrent updates and conflict resolution
     - _Requirements: 10.2, 3.3_
 
-- [ ] 13. Sprint Management UI
-  - [ ] 13.1 Create sprint planning interface
-    - Implement sprint creation and configuration
-    - Add issue assignment to sprints with drag-and-drop
+- [ ] 13. Sprint Management Integration
+  - [ ] 13.1 Implement sprint planning API integration
+    - Create SprintService with full sprint lifecycle management
+    - Connect existing sprint UI components to backend APIs
+    - Implement sprint creation, activation, and completion workflows
+    - Add issue assignment to sprints with drag-and-drop support
+    - Handle sprint status transitions and validation
     - _Requirements: 4.1, 4.2, 4.3, 10.3_
 
-  - [ ] 13.2 Implement sprint execution views
-    - Create active sprint dashboard
-    - Add sprint completion and retrospective features
+  - [ ] 13.2 Integrate sprint execution and monitoring
+    - Connect existing active sprint dashboard to real metrics
+    - Implement sprint progress tracking with backend data
+    - Add sprint completion workflow with unfinished issue handling
+    - Integrate sprint retrospective and reporting features
     - _Requirements: 4.4, 4.5_
 
-- [ ] 14. Dashboard and Reporting UI
-  - [ ] 14.1 Create main dashboard
-    - Implement metrics visualization with charts
-    - Add project and issue summary widgets
+- [ ] 14. Dashboard and Reporting Integration
+  - [ ] 14.1 Connect dashboard to real backend metrics
+    - Integrate existing dashboard UI with DashboardService APIs
+    - Implement real-time metrics visualization with charts
+    - Connect project and issue summary widgets to backend data
+    - Add caching and performance optimization for dashboard queries
     - _Requirements: 8.1, 8.2, 8.3, 10.1_
 
-  - [ ] 14.2 Implement reporting views
-    - Create issue distribution charts
+  - [ ] 14.2 Implement advanced reporting features
+    - Create issue distribution charts with real data
     - Add sprint progress and completion reports
+    - Implement data export functionality (JSON/CSV)
+    - Add filtering and date range selection for reports
     - _Requirements: 8.2, 8.3_
 
-- [ ] 15. Advanced Features
-  - [ ] 15.1 Implement label and comment systems
-    - Create label management interface
-    - Add comment threads to issues
+- [ ] 15. Advanced Features Integration
+  - [ ] 15.1 Implement label and comment systems integration
+    - Create LabelService and CommentService for API integration
+    - Connect existing label management UI to backend
+    - Integrate comment threads with real-time updates
+    - Add comment editing, deletion, and moderation features
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 6.1, 6.2, 6.3_
 
-  - [ ] 15.2 Add search and filtering
-    - Implement global search across issues
-    - Add advanced filtering options
+  - [ ] 15.2 Enhance search and filtering capabilities
+    - Implement global search across all issues with backend support
+    - Add advanced filtering options (multiple criteria, date ranges)
+    - Implement search result highlighting and pagination
+    - Add saved search functionality
     - _Requirements: 11.1, 11.2_
 
-  - [ ] 15.3 Implement audit history views
-    - Create issue history timeline
-    - Add change tracking visualization
+  - [ ] 15.3 Implement audit history and change tracking
+    - Connect existing issue history timeline to AuditService
+    - Add comprehensive change tracking visualization
+    - Implement audit log filtering and search
+    - Add data retention and archiving features
     - _Requirements: 7.2, 7.5_
 
-- [ ] 15.4 Write integration tests
-  - Test complete user workflows end-to-end
-  - _Requirements: 16.4_
+  - [ ] 15.4 Write comprehensive integration tests
+    - Test complete user workflows end-to-end
+    - Implement API integration tests with mock backend
+    - Add performance tests for large datasets
+    - Test error handling and edge cases
+    - _Requirements: 16.4_
 
 - [ ] 16. Performance Optimization and Monitoring
   - [ ] 16.1 Implement caching strategy
@@ -311,7 +350,16 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - Implement backup encryption and retention policies
     - _Requirements: 20.2, 20.5_
 
-- [ ] 19. Final Integration and Testing
+- [ ] 20. Frontend-Backend Integration Checkpoint
+  - Verify all frontend components are connected to real backend APIs
+  - Test authentication flow with JWT tokens and refresh mechanism
+  - Validate data consistency between frontend state and backend database
+  - Confirm all CRUD operations work correctly with proper error handling
+  - Test real-time updates and optimistic UI patterns
+  - Verify responsive design works with real data pagination
+  - Ask the user if questions arise about integration or if additional features are needed
+
+- [ ] 21. Final Integration and Testing
   - [ ] 19.1 Complete end-to-end testing
     - Test all user workflows from registration to project completion
     - Verify data isolation and security measures
@@ -327,7 +375,7 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - Verify authentication and authorization security
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
 
-- [ ] 20. Final Checkpoint - Production Readiness
+- [ ] 22. Final Checkpoint - Production Readiness
   - Ensure all tests pass including property-based tests
   - Verify all security measures are in place
   - Confirm performance meets requirements
