@@ -1,34 +1,34 @@
 # Infrastructure
 
-## Descripción
-Configuración de infraestructura para el Personal Issue Tracker.
+## Description
+Infrastructure configuration for the Personal Issue Tracker.
 
-## Estructura
+## Structure
 ```
 infrastructure/
 ├── docker/
-│   ├── init-db.sql           # Script de inicialización de BD
-│   ├── Dockerfile.backend    # Dockerfile para backend
-│   └── Dockerfile.frontend   # Dockerfile para frontend
-├── k8s/                      # Manifiestos de Kubernetes (futuro)
-└── terraform/                # Infrastructure as Code (futuro)
+│   ├── init-db.sql           # Database initialization script
+│   ├── Dockerfile.backend    # Backend Dockerfile
+│   └── Dockerfile.frontend   # Frontend Dockerfile
+├── k8s/                      # Kubernetes manifests (future)
+└── terraform/                # Infrastructure as Code (future)
 ```
 
 ## Docker
 
-### Desarrollo Local
+### Local Development
 ```bash
-# Levantar servicios (desde la raíz del proyecto)
+# Start services (from project root)
 docker-compose up -d
 
-# Ver logs
+# View logs
 docker-compose logs -f
 
-# Parar servicios
+# Stop services
 docker-compose down
 ```
 
-### Construcción de Imágenes
+### Building Images
 ```bash
 # Backend
 docker build -f infrastructure/docker/Dockerfile.backend -t personal-issue-tracker-backend .
@@ -37,18 +37,18 @@ docker build -f infrastructure/docker/Dockerfile.backend -t personal-issue-track
 docker build -f infrastructure/docker/Dockerfile.frontend -t personal-issue-tracker-frontend .
 ```
 
-## Servicios
+## Services
 
 ### PostgreSQL
-- **Puerto**: 5432
-- **Base de datos**: issuetracker
-- **Usuario**: postgres
+- **Port**: 5432
+- **Database**: issuetracker
+- **User**: postgres
 - **Password**: postgres
 
 ### Redis
-- **Puerto**: 6379
+- **Port**: 6379
 
-## Próximos Pasos
-- [ ] Crear Dockerfiles optimizados
-- [ ] Configurar manifiestos de Kubernetes
-- [ ] Implementar Infrastructure as Code con Terraform
+## Next Steps
+- [ ] Create optimized Dockerfiles
+- [ ] Configure Kubernetes manifests
+- [ ] Implement Infrastructure as Code with Terraform

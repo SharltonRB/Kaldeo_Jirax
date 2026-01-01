@@ -1,63 +1,63 @@
 # Personal Issue Tracker - Backend
 
-## Descripción
-Backend del Personal Issue Tracker desarrollado con Spring Boot 3.2.1 y Java 21.
+## Description
+Backend for the Personal Issue Tracker developed with Spring Boot 3.2.1 and Java 21.
 
-## Tecnologías
+## Technologies
 - **Framework**: Spring Boot 3.2.1
 - **Java**: 21
-- **Base de datos**: PostgreSQL
-- **Autenticación**: JWT
+- **Database**: PostgreSQL
+- **Authentication**: JWT
 - **Cache**: Redis
 - **Testing**: JUnit 5, Testcontainers, QuickTheories
 
-## Estructura del proyecto
+## Project Structure
 ```
 backend/
 ├── src/main/java/com/issuetracker/
-│   ├── config/          # Configuraciones
-│   ├── controller/      # Controladores REST
+│   ├── config/          # Configurations
+│   ├── controller/      # REST Controllers
 │   ├── dto/            # Data Transfer Objects
-│   ├── entity/         # Entidades JPA
-│   ├── exception/      # Manejo de excepciones
-│   ├── repository/     # Repositorios JPA
-│   ├── security/       # Configuración de seguridad
-│   ├── service/        # Lógica de negocio
-│   └── util/           # Utilidades
+│   ├── entity/         # JPA Entities
+│   ├── exception/      # Exception Handling
+│   ├── repository/     # JPA Repositories
+│   ├── security/       # Security Configuration
+│   ├── service/        # Business Logic
+│   └── util/           # Utilities
 ├── src/main/resources/
-│   ├── db/migration/   # Scripts de Flyway
-│   └── application.yml # Configuración
+│   ├── db/migration/   # Flyway Scripts
+│   └── application.yml # Configuration
 └── src/test/           # Tests
 ```
 
-## Comandos principales
+## Main Commands
 
-### Desarrollo
+### Development
 ```bash
-# Ejecutar aplicación
+# Run application
 mvn spring-boot:run
 
-# Tests rápidos (sin property tests)
+# Fast tests (without property tests)
 mvn test -Pfast-tests
 
-# Property tests rápidos
+# Quick property tests
 mvn test -Pquick-property-tests
 
-# Tests completos para CI
+# Complete tests for CI
 mvn test -Pci-tests
 ```
 
-### Base de datos
+### Database
 ```bash
-# Migrar base de datos
+# Migrate database
 mvn flyway:migrate
 
-# Limpiar base de datos
+# Clean database
 mvn flyway:clean
 ```
 
-## Configuración
-Ver `src/main/resources/application.yml` para configuración de la aplicación.
+## Configuration
+See `src/main/resources/application.yml` for application configuration.
 
-## Documentación de API
-La documentación de la API se encuentra en `/docs/api/`.
+## API Documentation
+API documentation is available at `/docs/api/`.

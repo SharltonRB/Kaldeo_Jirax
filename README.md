@@ -1,138 +1,138 @@
 # Personal Issue Tracker
 
-Una aplicación de gestión de proyectos personales inspirada en Jira, construida con Spring Boot y React TypeScript.
+A Jira-inspired personal project management application built with Spring Boot and React TypeScript.
 
-## 🏗️ Estructura del Proyecto
+## 🏗️ Project Structure
 
 ```
 personal-issue-tracker/
-├── backend/                      # API Spring Boot
-├── frontend/                     # SPA React TypeScript
+├── backend/                      # Spring Boot API
+├── frontend/                     # React TypeScript SPA
 ├── infrastructure/               # Docker, K8s, Terraform
-├── docs/                        # Documentación
-├── scripts/                     # Scripts de automatización
-├── logs/                        # Logs de aplicación
-├── docker-compose.yml           # Servicios de desarrollo
-└── README.md                    # Este archivo
+├── docs/                        # Documentation
+├── scripts/                     # Automation scripts
+├── logs/                        # Application logs
+├── docker-compose.yml           # Development services
+└── README.md                    # This file
 ```
 
-## 🚀 Inicio Rápido
+## 🚀 Quick Start
 
-### Prerrequisitos
+### Prerequisites
 - Java 21
 - Maven 3.8+
 - Node.js 18+
-- Docker y Docker Compose
+- Docker and Docker Compose
 
-### 1. Configurar Entorno de Desarrollo
+### 1. Setup Development Environment
 
 ```bash
-# Configurar backend
+# Setup backend
 ./scripts/setup/setup-backend.sh
 
-# Configurar frontend
+# Setup frontend
 ./scripts/setup/setup-frontend.sh
 ```
 
-### 2. Iniciar Servicios
+### 2. Start Services
 
 ```bash
-# Iniciar servicios de base de datos y cache
+# Start database and cache services
 docker-compose up -d
 
-# Iniciar backend (en otra terminal)
+# Start backend (in another terminal)
 cd backend && mvn spring-boot:run
 
-# Iniciar frontend (en otra terminal)
+# Start frontend (in another terminal)
 cd frontend && npm run dev
 ```
 
-### 3. Acceder a las Aplicaciones
+### 3. Access Applications
 
 - **Frontend**: http://localhost:5173
-- **API Backend**: http://localhost:8080/api
-- **Documentación API**: http://localhost:8080/api/swagger-ui.html
+- **Backend API**: http://localhost:8080/api
+- **API Documentation**: http://localhost:8080/api/swagger-ui.html
 
-## 🛠️ Desarrollo
+## 🛠️ Development
 
-### Scripts de Construcción
+### Build Scripts
 
 ```bash
-# Construir todo
+# Build everything
 ./scripts/build.sh all
 
-# Construir componente específico
+# Build specific component
 ./scripts/build.sh backend
 ./scripts/build.sh frontend
 
-# Construcción limpia con tests
+# Clean build with tests
 ./scripts/build.sh all --clean --test
 ```
 
 ### Testing
 
 ```bash
-# Tests rápidos de desarrollo
+# Fast development tests
 ./scripts/test-scripts.sh fast
 
-# Suite completa de tests
+# Complete test suite
 ./scripts/test-scripts.sh ci
 
-# Solo tests del backend
+# Backend tests only
 cd backend && mvn test -Pfast-tests
 
-# Solo tests del frontend
+# Frontend tests only
 cd frontend && npm run test:run
 ```
 
-## 📁 Documentación de Módulos
+## 📁 Module Documentation
 
-Cada módulo tiene su propia documentación detallada:
+Each module has its own detailed documentation:
 
-- **[Backend](backend/README.md)** - Documentación de la API Spring Boot
-- **[Frontend](frontend/README.md)** - Documentación de la SPA React TypeScript
-- **[Infraestructura](infrastructure/README.md)** - Configuración de Docker y despliegue
-- **[Documentación](docs/README.md)** - Arquitectura, documentos de API, guías
-- **[Scripts](scripts/README.md)** - Scripts de automatización y construcción
+- **[Backend](backend/README.en.md)** - Spring Boot API documentation
+- **[Frontend](frontend/README.md)** - React TypeScript SPA documentation
+- **[Infrastructure](infrastructure/README.en.md)** - Docker, deployment configuration
+- **[Documentation](docs/README.en.md)** - Architecture, API docs, guides
+- **[Scripts](scripts/README.en.md)** - Automation and build scripts
 
-> 💡 **Consejo**: Haz clic en cualquier carpeta en GitHub para ver su README específico con información detallada sobre ese módulo.
+> 💡 **Tip**: Click on any folder in GitHub to see its specific README with detailed information about that module.
 
 ## 🐳 Docker
 
-### Desarrollo
+### Development
 ```bash
-# Iniciar todos los servicios
+# Start all services
 docker-compose up -d
 
-# Ver logs
+# View logs
 docker-compose logs -f
 
-# Detener servicios
+# Stop services
 docker-compose down
 ```
 
-### Construcción para Producción
+### Production Build
 ```bash
-# Construir imagen del backend
+# Build backend image
 docker build -f infrastructure/docker/Dockerfile.backend -t personal-issue-tracker-backend .
 
-# Construir imagen del frontend
+# Build frontend image
 docker build -f infrastructure/docker/Dockerfile.frontend -t personal-issue-tracker-frontend .
 ```
 
-## 📚 Documentación
+## 📚 Documentation
 
-La documentación completa está disponible en el directorio `docs/`:
+Comprehensive documentation is available in the `docs/` directory:
 
-- **[Documentación de API](docs/api/)** - Endpoints de la API REST
-- **[Arquitectura](docs/architecture/)** - Diseño del sistema y patrones
-- **[Guía de Desarrollo](docs/development/)** - Flujos de trabajo de desarrollo
-- **[Estrategia de Testing](docs/testing/)** - Enfoques y herramientas de testing
-- **[Guía de Despliegue](docs/deployment/)** - Despliegue en producción
+- **[API Documentation](docs/api/)** - REST API endpoints
+- **[Architecture](docs/architecture/)** - System design and patterns
+- **[Development Guide](docs/development/)** - Development workflows
+- **[Testing Strategy](docs/testing/)** - Testing approaches and tools
+- **[Deployment Guide](docs/deployment/)** - Production deployment
 
-## 🔧 Configuración
+## 🔧 Configuration
 
-### Variables de Entorno
+### Environment Variables
 
 ```bash
 # Backend
@@ -147,24 +147,24 @@ REDIS_PORT=6379
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-## 🚀 Despliegue
+## 🚀 Deployment
 
-Ver [documentación de despliegue](docs/deployment/) para guías detalladas de despliegue en diferentes entornos.
+See [deployment documentation](docs/deployment/) for detailed deployment guides for different environments.
 
-## 🤝 Contribuir
+## 🤝 Contributing
 
-1. Seguir la estructura y convenciones del proyecto
-2. Actualizar documentación al hacer cambios
-3. Ejecutar tests antes de enviar cambios
-4. Usar los scripts proporcionados para consistencia
+1. Follow the project structure and conventions
+2. Update documentation when making changes
+3. Run tests before submitting changes
+4. Use the provided scripts for consistency
 
-## 📄 Licencia
+## 📄 License
 
-Este proyecto es para uso educativo y personal.
+This project is for educational and personal use.
 
 ---
 
-## 🌐 Versiones de Idioma
+## 🌐 Language Versions
 
 - **English**: [README.en.md](README.en.md)
 - **Español**: [README.md](README.md)

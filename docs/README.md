@@ -1,40 +1,40 @@
-# Documentación - Personal Issue Tracker
+# Documentation - Personal Issue Tracker
 
-## Estructura de Documentación
+## Documentation Structure
 
 ### 📚 API
-Documentación de la API REST del backend.
+REST API backend documentation.
 
 ### 🏗️ Architecture
-Diagramas de arquitectura, patrones de diseño y decisiones técnicas.
+Architecture diagrams, design patterns, and technical decisions.
 
 ### 🚀 Deployment
-Guías de despliegue en diferentes entornos.
+Deployment guides for different environments.
 
 ### 💻 Development
-Guías para desarrolladores, análisis de integración y resolución de problemas.
+Developer guides, integration analysis, and troubleshooting.
 
 ### 🧪 Testing
-Estrategias de testing, troubleshooting y documentación de pruebas.
+Testing strategies, troubleshooting, and test documentation.
 
-## Navegación Rápida
+## Quick Navigation
 
-| Categoría | Descripción | Archivos principales |
-|-----------|-------------|---------------------|
-| **API** | Documentación de endpoints | `api/` |
-| **Architecture** | Diseño del sistema | `architecture/` |
-| **Deployment** | Guías de despliegue | `deployment/` |
-| **Development** | Desarrollo y debugging | `development/` |
-| **Testing** | Estrategias de testing | `testing/` |
+| Category | Description | Main Files |
+|----------|-------------|------------|
+| **API** | Endpoint documentation | `api/` |
+| **Architecture** | System design | `architecture/` |
+| **Deployment** | Deployment guides | `deployment/` |
+| **Development** | Development and debugging | `development/` |
+| **Testing** | Testing strategies | `testing/` |
 
-## Contribuir a la Documentación
+## Contributing to Documentation
 
-1. Mantén la documentación actualizada con los cambios de código
-2. Usa Markdown para consistencia
-3. Incluye diagramas cuando sea necesario
-4. Documenta decisiones arquitectónicas importantes
+1. Keep documentation updated with code changes
+2. Use Markdown for consistency
+3. Include diagrams when necessary
+4. Document important architectural decisions
 
-## Versiones de Idioma
+## Language Versions
 
-- **English**: Archivos con extensión `.en.md`
-- **Español**: Archivos con extensión `.md` (por defecto)
+- **English**: Files with `.en.md` extension
+- **Español**: Files with `.md` extension (default)
