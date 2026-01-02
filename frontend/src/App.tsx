@@ -742,8 +742,13 @@ const DeleteProjectConfirmationModal = ({ isOpen, onClose, onConfirm, project }:
   if (!isOpen || !project) return null;
 
   return (
-    <div className="absolute inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
-      <GlassCard className="w-full max-w-sm p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      {/* Backdrop blur effect */}
+      <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+      
+      {/* Modal content */}
+      <div className="relative">
+        <GlassCard className="w-full max-w-sm p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
@@ -769,6 +774,7 @@ const DeleteProjectConfirmationModal = ({ isOpen, onClose, onConfirm, project }:
           </button>
         </div>
       </GlassCard>
+      </div>
     </div>
   );
 };
@@ -781,8 +787,13 @@ const DeleteConfirmationModal = ({ isOpen, onClose, issue, onDelete, onMoveToBac
   const isEpic = issue.type === 'EPIC';
 
   return (
-    <div className="absolute inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
-      <GlassCard className="w-full max-w-sm p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      {/* Backdrop blur effect */}
+      <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+      
+      {/* Modal content */}
+      <div className="relative">
+        <GlassCard className="w-full max-w-sm p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
@@ -822,6 +833,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, issue, onDelete, onMoveToBac
           </button>
         </div>
       </GlassCard>
+      </div>
     </div>
   );
 }
@@ -839,8 +851,13 @@ const SprintActivationModal = ({ isOpen, onClose, onConfirm, sprint }: { isOpen:
   const [endDate, setEndDate] = useState(twoWeeksLaterStr);
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
-      <GlassCard className="w-full max-w-md p-6 bg-white/90 dark:bg-[#09090b]/90 border-white/20 shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop blur effect */}
+      <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+      
+      {/* Modal content */}
+      <div className="relative">
+        <GlassCard className="w-full max-w-md p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-4">
             <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
@@ -881,6 +898,7 @@ const SprintActivationModal = ({ isOpen, onClose, onConfirm, sprint }: { isOpen:
           </button>
         </div>
       </GlassCard>
+      </div>
     </div>
   );
 };
@@ -890,8 +908,13 @@ const SprintCompletionModal = ({ isOpen, onClose, onConfirm, warningDetails }: {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
-      <GlassCard className="w-full max-w-md p-6 bg-white/90 dark:bg-[#09090b]/90 border-white/20 shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop blur effect */}
+      <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+      
+      {/* Modal content */}
+      <div className="relative">
+        <GlassCard className="w-full max-w-md p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -931,6 +954,7 @@ const SprintCompletionModal = ({ isOpen, onClose, onConfirm, warningDetails }: {
           </button>
         </div>
       </GlassCard>
+      </div>
     </div>
   );
 };
@@ -988,8 +1012,13 @@ const BacklogPickerModal = ({ isOpen, onClose, onAdd, currentSprintId }: { isOpe
   };
 
   return (
-    <div className="absolute inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
-      <GlassCard className="w-full max-w-2xl h-[70vh] flex flex-col bg-white/95 dark:bg-[#09090b]/95 border-white/20 shadow-2xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2">
+      {/* Backdrop blur effect */}
+      <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+      
+      {/* Modal content */}
+      <div className="relative w-full max-w-6xl">
+        <GlassCard className="w-full h-[70vh] flex flex-col bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="p-6 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
           <div>
             <h3 className="text-xl font-bold dark:text-white">Add from Backlog</h3>
@@ -1127,6 +1156,7 @@ const BacklogPickerModal = ({ isOpen, onClose, onAdd, currentSprintId }: { isOpe
           </div>
         </div>
       </GlassCard>
+      </div>
     </div>
   );
 };
@@ -1238,8 +1268,13 @@ const CreateIssueModal = () => {
   };
 
   return (
-    <div className="absolute inset-0 z-[50] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
-      <GlassCard className="w-full max-w-3xl p-6 bg-white/80 dark:bg-[#09090b]/80 border-white/20 shadow-2xl">
+    <div className="fixed inset-0 z-[50] flex items-center justify-center p-4">
+      {/* Backdrop blur effect */}
+      <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+      
+      {/* Modal content */}
+      <div className="relative">
+        <GlassCard className="w-full max-w-3xl p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold dark:text-white">Create New Issue</h3>
           <button onClick={() => setCreateIssueModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
@@ -1349,6 +1384,7 @@ const CreateIssueModal = () => {
           </div>
         </div>
       </GlassCard>
+      </div>
     </div>
   );
 };
@@ -2109,8 +2145,13 @@ const ProjectsList = () => {
         </div>
 
         {creationWizardStep === 'TYPE' && (
-          <div className="absolute inset-0 z-[50] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-            <GlassCard className="w-full max-w-md p-8 bg-white/80 dark:bg-[#09090b]/80 border-white/20 shadow-2xl">
+          <div className="fixed inset-0 z-[50] flex items-center justify-center p-4">
+            {/* Backdrop blur effect */}
+            <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+            
+            {/* Modal content */}
+            <div className="relative">
+              <GlassCard className="w-full max-w-md p-8 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
               <h3 className="text-xl font-bold text-center mb-6 dark:text-white">What kind of Issue is it?</h3>
               <div className="grid grid-cols-2 gap-4">
                 <button 
@@ -2139,12 +2180,18 @@ const ProjectsList = () => {
                 Cancel
               </button>
             </GlassCard>
+            </div>
           </div>
         )}
 
         {creationWizardStep === 'PARENT' && (
-          <div className="absolute inset-0 z-[50] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-            <GlassCard className="w-full max-w-md p-6 bg-white/80 dark:bg-[#09090b]/80 border-white/20 shadow-2xl max-h-[80vh] flex flex-col">
+          <div className="fixed inset-0 z-[50] flex items-center justify-center p-4">
+            {/* Backdrop blur effect */}
+            <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+            
+            {/* Modal content */}
+            <div className="relative">
+              <GlassCard className="w-full max-w-md p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl max-h-[80vh] flex flex-col animate-in zoom-in-95 duration-300">
               <h3 className="text-xl font-bold text-center mb-2 dark:text-white">Select Parent Epic</h3>
               <p className="text-center text-sm text-gray-500 mb-6">This issue must belong to an Epic.</p>
               
@@ -2175,6 +2222,7 @@ const ProjectsList = () => {
                 Cancel
               </button>
             </GlassCard>
+            </div>
           </div>
         )}
 
@@ -2294,8 +2342,13 @@ const ProjectsList = () => {
 
       {/* CREATE PROJECT MODAL */}
       {showModal && (
-        <div className="absolute inset-0 z-[50] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <GlassCard className="w-full max-w-lg p-6 bg-white/80 dark:bg-[#09090b]/80 border-white/20 shadow-2xl">
+        <div className="fixed inset-0 z-[50] flex items-center justify-center p-4">
+          {/* Backdrop blur effect */}
+          <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
+          
+          {/* Modal content */}
+          <div className="relative">
+            <GlassCard className="w-full max-w-lg p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
             <h3 className="text-xl font-bold mb-4 dark:text-white">Create Project</h3>
             <div className="space-y-4">
               <GlassInput 
@@ -2322,6 +2375,7 @@ const ProjectsList = () => {
               </div>
             </div>
           </GlassCard>
+          </div>
         </div>
       )}
 
@@ -3070,7 +3124,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const { isSidebarCollapsed } = useApp();
 
   return (
-    <div className="flex h-screen w-full bg-[#f5f5f7] dark:bg-[#020617] text-gray-900 dark:text-gray-100 transition-colors duration-300 overflow-hidden">
+    <div className="flex h-screen w-full bg-[#f5f5f7] dark:bg-[#020617] text-gray-900 dark:text-gray-100 transition-colors duration-300">
       {/* Ambient Background Lights - Positioned absolutely within the container but behind content */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[20%] w-[600px] h-[600px] bg-blue-500/5 dark:bg-blue-500/5 rounded-full blur-[120px]" />
