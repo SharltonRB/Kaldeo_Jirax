@@ -432,6 +432,11 @@ javadoc/
 # PROJECT SPECIFIC
 # ================================
 
+# Development scripts (contain environment variables)
+start-all.sh
+stop-all.sh
+*.sh
+
 # Scripts - Keep all scripts but exclude sensitive ones
 scripts/deploy-prod.sh
 scripts/secrets/

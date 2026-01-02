@@ -62,7 +62,7 @@ apiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Try to refresh the token
-          const response = await axios.post('/api/auth/refresh', {
+          const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/refresh`, {
             refreshToken,
           });
 
@@ -75,13 +75,12 @@ apiClient.interceptors.response.use(
         } catch (refreshError) {
           // Refresh failed, clear tokens and redirect to login
           clearTokens();
-          window.location.href = '/login';
+          // Don't redirect automatically, let the auth context handle it
           return Promise.reject(refreshError);
         }
       } else {
-        // No refresh token, redirect to login
+        // No refresh token, clear tokens
         clearTokens();
-        window.location.href = '/login';
       }
     }
 

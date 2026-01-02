@@ -33,6 +33,7 @@ Zap,
 Rocket,
 RotateCcw,
 Archive} from 'lucide-react';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 
 /***
  * =========================================================================================
@@ -199,7 +200,7 @@ interface AppState {
 }
 
 interface AppContextType extends AppState {
-  login: (email: string) => void;
+  login: (email: string) => void; // Keep for backward compatibility, but will be handled by AuthContext
   logout: () => void;
   toggleTheme: () => void;
   navigate: (view: AppState['currentView']) => void;
@@ -227,9 +228,9 @@ interface AppContextType extends AppState {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const { user: authUser, logout: authLogout } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light'); 
-  const [currentView, setCurrentView] = useState<AppState['currentView']>('auth');
+  const [currentView, setCurrentView] = useState<AppState['currentView']>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [isCreateIssueModalOpen, setCreateIssueModalOpen] = useState(false);
@@ -242,6 +243,14 @@ const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [issues, setIssues] = useState<Issue[]>(INITIAL_ISSUES);
   const [labels, setLabels] = useState<Label[]>(INITIAL_LABELS);
 
+  // Convert auth user to app user format
+  const user = authUser ? {
+    id: authUser.id,
+    name: authUser.name,
+    email: authUser.email,
+    avatar: authUser.avatar
+  } : null;
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -251,14 +260,13 @@ const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, [theme]);
 
   const login = (email: string) => {
-    setTimeout(() => {
-      setUser({ ...MOCK_USER, email });
-      setCurrentView('dashboard');
-    }, 800);
+    // This is kept for backward compatibility but actual login is handled by AuthContext
+    // The AuthContext will automatically update the user state
+    console.log('Login called with email:', email);
   };
 
   const logout = () => {
-    setUser(null);
+    authLogout();
     setCurrentView('auth');
   };
 
@@ -1669,18 +1677,40 @@ const IssueDetailModal = () => {
 };
 // --- AUTH VIEW ---
 const AuthView = () => {
-  const { login, theme, toggleTheme } = useApp();
+  const { theme, toggleTheme } = useApp();
+  const { login, register, isLoading, error, clearError } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      login(email);
-      setLoading(false);
-    }, 1500);
+    clearError();
+    
+    try {
+      if (isRegister) {
+        await register({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        });
+      } else {
+        await login({
+          email: formData.email,
+          password: formData.password
+        });
+      }
+    } catch (error) {
+      // Error is handled by the auth context
+      console.error('Authentication failed:', error);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -1711,20 +1741,37 @@ const AuthView = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+          
           {isRegister && (
-            <GlassInput placeholder="Full Name" required />
+            <GlassInput 
+              placeholder="Full Name" 
+              value={formData.name}
+              onChange={(e: any) => handleInputChange('name', e.target.value)}
+              required 
+            />
           )}
           <GlassInput 
             type="email" 
             placeholder="email@example.com" 
-            value={email}
-            onChange={(e: any) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={(e: any) => handleInputChange('email', e.target.value)}
             required 
           />
-          <GlassInput type="password" placeholder="Password" required />
+          <GlassInput 
+            type="password" 
+            placeholder="Password" 
+            value={formData.password}
+            onChange={(e: any) => handleInputChange('password', e.target.value)}
+            required 
+          />
           
-          <GlassButton type="submit" variant="orange" className="w-full py-3 text-lg" disabled={loading}>
-            {loading ? 'Processing...' : (isRegister ? 'Create Account' : 'Log In')}
+          <GlassButton type="submit" variant="orange" className="w-full py-3 text-lg" disabled={isLoading}>
+            {isLoading ? 'Processing...' : (isRegister ? 'Create Account' : 'Log In')}
           </GlassButton>
         </form>
 
@@ -3157,8 +3204,24 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
  */
 
 const AppContent = () => {
-  const { currentView, user } = useApp();
+  const { currentView } = useApp();
+  const { user, isLoading } = useAuth();
 
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-[#020617]">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-blue-500 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30 animate-pulse">
+            <Zap className="text-white w-8 h-8" />
+          </div>
+          <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth view if not authenticated
   if (!user) return <AuthView />;
 
   const renderView = () => {
@@ -3180,8 +3243,10 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </AuthProvider>
   );
 }
