@@ -2,6 +2,8 @@
 -- This migration is only applied in development profile
 
 -- Insert sample users (passwords are hashed versions of 'password123')
+-- NOTE: These are DEVELOPMENT-ONLY test users with weak passwords
+-- NEVER use these credentials in production
 INSERT INTO users (email, password_hash, name, created_at, updated_at) VALUES
 ('john.doe@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P8jS9.k6ssxY6S', 'John Doe', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('jane.smith@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P8jS9.k6ssxY6S', 'Jane Smith', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
