@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /**
  * Implementation of Spring Security UserDetailsService.
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
+    private static final Logger logger = Logger.getLogger(UserDetailsServiceImpl.class.getName());
     private final UserRepository userRepository;
 
     @Autowired
@@ -33,10 +35,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        logger.fine("Loading user by username: " + username);
+        
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
+                .orElseThrow(() -> {
+                    logger.warning("User not found with email: " + username);
+                    return new UsernameNotFoundException("User not found with email: " + username);
+                });
 
-        return org.springframework.security.core.userdetails.User.builder()
+        logger.fine("User found: " + user.getName());
+
+        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
                 .password(user.getPasswordHash())
                 .authorities(new ArrayList<>()) // No roles for now, all users have same permissions
@@ -45,5 +54,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .credentialsExpired(false)
                 .disabled(false)
                 .build();
+                
+        logger.fine("UserDetails created successfully");
+        return userDetails;
     }
 }

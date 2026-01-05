@@ -13,6 +13,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.logging.Logger;
+
 /**
  * Service for authentication operations.
  * Handles user registration, login, and token refresh.
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthenticationService {
 
+    private static final Logger logger = Logger.getLogger(AuthenticationService.class.getName());
     private final UserService userService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -71,23 +74,33 @@ public class AuthenticationService {
      * @return authentication response with tokens
      */
     public AuthResponse login(LoginRequest request) {
-        // Authenticate user
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        logger.fine("Login attempt for email: " + request.getEmail());
         
-        // Load user details
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-        User user = userService.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        // Generate tokens
-        String accessToken = jwtService.generateToken(userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
-        
-        // Create response
-        UserDto userDto = UserDto.fromEntity(user);
-        return new AuthResponse(accessToken, refreshToken, jwtExpiration / 1000, userDto);
+        try {
+            // Authenticate user
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+            
+            // Load user details
+            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+            User user = userService.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            // Generate tokens
+            String accessToken = jwtService.generateToken(userDetails);
+            String refreshToken = jwtService.generateRefreshToken(userDetails);
+            
+            // Create response
+            UserDto userDto = UserDto.fromEntity(user);
+            AuthResponse response = new AuthResponse(accessToken, refreshToken, jwtExpiration / 1000, userDto);
+            
+            logger.info("Login successful for user: " + request.getEmail());
+            return response;
+        } catch (Exception e) {
+            logger.warning("Authentication failed for email: " + request.getEmail() + " - " + e.getMessage());
+            throw e;
+        }
     }
 
     /**

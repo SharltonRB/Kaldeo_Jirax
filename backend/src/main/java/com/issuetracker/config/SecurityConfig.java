@@ -67,6 +67,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints (context path is already /api)
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/test/**").permitAll() // Add test endpoints
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/actuator/info").permitAll()
                         .requestMatchers("/error").permitAll()

@@ -12,6 +12,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
+import java.util.logging.Logger;
 
 /**
  * Base class for integration tests with Testcontainers PostgreSQL.
@@ -32,6 +33,8 @@ import java.io.File;
 @Transactional
 public abstract class BaseTestcontainersTest {
 
+    private static final Logger logger = Logger.getLogger(BaseTestcontainersTest.class.getName());
+
     static {
         // Configure Docker BEFORE Testcontainers tries to connect
         configureDockerForMacOS();
@@ -49,10 +52,10 @@ public abstract class BaseTestcontainersTest {
     static void setupDocker() {
         // Verify connection
         try {
-            System.out.println("🐳 Docker Host: " + System.getProperty("DOCKER_HOST"));
-            System.out.println("✅ PostgreSQL Container Started: " + postgres.getJdbcUrl());
+            logger.fine("Docker Host: " + System.getProperty("DOCKER_HOST"));
+            logger.info("PostgreSQL Container Started: " + postgres.getJdbcUrl());
         } catch (Exception e) {
-            System.err.println("❌ Error starting containers: " + e.getMessage());
+            logger.severe("Error starting containers: " + e.getMessage());
             throw e;
         }
     }
@@ -64,7 +67,7 @@ public abstract class BaseTestcontainersTest {
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         
-        System.out.println("✅ Using Testcontainers PostgreSQL: " + postgres.getJdbcUrl());
+        logger.fine("Using Testcontainers PostgreSQL: " + postgres.getJdbcUrl());
     }
 
     /**
@@ -75,7 +78,7 @@ public abstract class BaseTestcontainersTest {
         String osName = System.getProperty("os.name").toLowerCase();
         
         if (osName.contains("mac")) {
-            System.out.println("🍎 Detected macOS - Configuring Docker socket");
+            logger.fine("Detected macOS - Configuring Docker socket");
             
             // First try with the standard symlink location
             String dockerHost = "unix:///var/run/docker.sock";
@@ -92,7 +95,7 @@ public abstract class BaseTestcontainersTest {
                 File socket = new File(socketPath);
                 if (socket.exists()) {
                     dockerHost = "unix://" + socketPath;
-                    System.out.println("✅ Found Docker socket at: " + socketPath);
+                    logger.fine("Found Docker socket at: " + socketPath);
                     break;
                 }
             }

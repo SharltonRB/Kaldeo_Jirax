@@ -34,6 +34,6 @@ management:
 
 # JWT Configuration - NEVER use default values in production
 jwt:
-  secret: ${JWT_SECRET:please-change-this-default-secret-key-in-production}
+  secret: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=
   expiration: 86400000 # 24 hours in milliseconds
   refresh-expiration: 604800000 # 7 days in milliseconds

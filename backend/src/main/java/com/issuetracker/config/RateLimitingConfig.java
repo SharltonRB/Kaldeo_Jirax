@@ -77,13 +77,13 @@ public class RateLimitingConfig {
 
         /**
          * Creates a new rate limiting bucket.
-         * Allows 5 requests per minute for authentication endpoints.
+         * Allows 100 requests per minute for authentication endpoints (increased for development).
          *
          * @param ip client IP address
          * @return new bucket
          */
         private Bucket createBucket(String ip) {
-            Bandwidth limit = Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(1)));
+            Bandwidth limit = Bandwidth.classic(100, Refill.intervally(100, Duration.ofMinutes(1)));
             return Bucket.builder()
                     .addLimit(limit)
                     .build();

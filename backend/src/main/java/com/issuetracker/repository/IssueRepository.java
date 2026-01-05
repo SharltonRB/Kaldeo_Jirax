@@ -123,7 +123,8 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
      * @param project the project
      * @return issue count
      */
-    long countByUserAndProject(User user, Project project);
+    @Query("SELECT COUNT(i) FROM Issue i WHERE i.user = :user AND i.project = :project")
+    long countByUserAndProject(@Param("user") User user, @Param("project") Project project);
 
     /**
      * Counts issues by user and sprint.

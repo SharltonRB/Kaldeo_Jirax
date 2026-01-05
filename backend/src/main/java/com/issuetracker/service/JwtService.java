@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.logging.Logger;
 
 /**
  * Service for JWT token generation, validation, and management.
@@ -20,6 +21,8 @@ import java.util.function.Function;
  */
 @Service
 public class JwtService {
+
+    private static final Logger logger = Logger.getLogger(JwtService.class.getName());
 
     @Value("${jwt.secret}")
     private String secretKey;
@@ -156,7 +159,12 @@ public class JwtService {
      * @return signing key
      */
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (Exception e) {
+            logger.severe("Error decoding JWT secret key: " + e.getMessage());
+            throw new RuntimeException("Failed to initialize JWT signing key", e);
+        }
     }
 }

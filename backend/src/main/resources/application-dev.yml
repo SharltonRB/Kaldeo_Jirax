@@ -41,4 +41,4 @@ logging:
 # Development-specific JWT secret - ONLY FOR DEVELOPMENT
 # NEVER use this in production - always use environment variables
 jwt:
-  secret: ${JWT_SECRET:dev-secret-key-CHANGE-IN-PRODUCTION-12345}
+  secret: ${JWT_SECRET:ZGV2LXNlY3JldC1rZXktQ0hBTkdFLUlOLVBST0RVQ1RJT04tMTIzNDU=}

@@ -67,10 +67,6 @@ class AuthenticationSimpleTest {
         // 6. Validate credentials
         assertThat(userService.validateCredentials(email, password)).isTrue();
         assertThat(userService.validateCredentials(email, "wrongpassword")).isFalse();
-        
-        System.out.println("✅ Authentication test completed successfully");
-        System.out.println("📧 User: " + email);
-        System.out.println("🔑 Generated token: " + token.substring(0, 20) + "...");
     }
 
     @Test
@@ -104,8 +100,6 @@ class AuthenticationSimpleTest {
         assertThat(jwtService.isTokenValid(token2, userDetails2)).isTrue();
         assertThat(jwtService.isTokenValid(token1, userDetails2)).isFalse();
         assertThat(jwtService.isTokenValid(token2, userDetails1)).isFalse();
-        
-        System.out.println("✅ Multiple users test completed successfully");
     }
 
     @Test
@@ -120,7 +114,5 @@ class AuthenticationSimpleTest {
         assertThat(user.getPasswordHash()).isNotEqualTo(plainPassword);
         assertThat(passwordEncoder.matches(plainPassword, user.getPasswordHash())).isTrue();
         assertThat(passwordEncoder.matches("wrongPassword", user.getPasswordHash())).isFalse();
-        
-        System.out.println("✅ Password encryption test completed successfully");
     }
 }
