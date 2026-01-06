@@ -2,6 +2,8 @@ package com.issuetracker.controller;
 
 import com.issuetracker.dto.CreateSprintRequest;
 import com.issuetracker.dto.SprintDto;
+import com.issuetracker.dto.SprintActivationResponse;
+import com.issuetracker.dto.SprintActivationRequest;
 import com.issuetracker.dto.UpdateSprintRequest;
 import com.issuetracker.entity.SprintStatus;
 import com.issuetracker.entity.User;
@@ -140,15 +142,38 @@ public class SprintController {
 
     /**
      * Activates a sprint, ensuring only one active sprint per user.
+     * Optionally accepts new dates for the sprint.
      *
      * @param id sprint ID
-     * @return activated sprint DTO
+     * @param request optional activation request with new dates
+     * @return sprint activation response with updated sprint and affected issues
      */
     @PostMapping("/{id}/activate")
-    public ResponseEntity<SprintDto> activateSprint(@PathVariable Long id) {
+    public ResponseEntity<SprintActivationResponse> activateSprint(
+            @PathVariable Long id,
+            @RequestBody(required = false) SprintActivationRequest request) {
+        
         User currentUser = getCurrentUser();
-        SprintDto sprint = sprintService.activateSprint(id, currentUser);
-        return ResponseEntity.ok(sprint);
+        
+        // Add logging to debug the request
+        if (request != null) {
+            System.out.println("🔍 DEBUG: Received activation request with dates: " + 
+                             "startDate=" + request.getNewStartDate() + 
+                             ", endDate=" + request.getNewEndDate());
+        } else {
+            System.out.println("🔍 DEBUG: Received activation request without dates");
+        }
+        
+        SprintActivationResponse response;
+        if (request != null && request.getNewStartDate() != null && request.getNewEndDate() != null) {
+            System.out.println("🔍 DEBUG: Calling activateSprint with new dates");
+            response = sprintService.activateSprint(id, currentUser, request.getNewStartDate(), request.getNewEndDate());
+        } else {
+            System.out.println("🔍 DEBUG: Calling activateSprint without dates");
+            response = sprintService.activateSprint(id, currentUser);
+        }
+        
+        return ResponseEntity.ok(response);
     }
 
     /**

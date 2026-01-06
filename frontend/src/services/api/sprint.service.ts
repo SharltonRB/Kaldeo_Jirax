@@ -4,6 +4,7 @@ import {
   Sprint, 
   CreateSprintRequest, 
   UpdateSprintRequest,
+  SprintActivationResponse,
   Issue,
   PageRequest,
   PageResponse,
@@ -67,8 +68,20 @@ class SprintApiService extends BaseApiService<Sprint, CreateSprintRequest, Updat
   /**
    * Start sprint (change status to ACTIVE)
    */
-  async startSprint(id: number): Promise<Sprint> {
-    return api.post<Sprint>(`${this.baseUrl}/${id}/activate`);
+  async startSprint(id: number, newStartDate?: string, newEndDate?: string): Promise<SprintActivationResponse> {
+    const requestBody = (newStartDate && newEndDate) ? {
+      newStartDate,
+      newEndDate
+    } : undefined;
+    
+    console.log('🔍 DEBUG: Sprint activation request:', {
+      id,
+      newStartDate,
+      newEndDate,
+      requestBody
+    });
+    
+    return api.post<SprintActivationResponse>(`${this.baseUrl}/${id}/activate`, requestBody);
   }
 
   /**

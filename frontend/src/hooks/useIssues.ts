@@ -117,6 +117,11 @@ export const useUpdateIssue = () => {
     },
     onError: (error) => {
       console.error('Failed to update issue:', error);
+      
+      // Invalidate issues list to refresh data when update fails
+      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+      
       throw new Error(handleApiError(error));
     },
   });
@@ -143,6 +148,11 @@ export const useUpdateIssueStatus = () => {
     },
     onError: (error) => {
       console.error('Failed to update issue status:', error);
+      
+      // Invalidate issues list to refresh data when status update fails
+      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+      
       throw new Error(handleApiError(error));
     },
   });

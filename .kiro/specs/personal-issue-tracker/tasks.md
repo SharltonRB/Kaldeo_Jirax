@@ -268,10 +268,10 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - **NO MODIFICAR UI EXISTENTE** - solo conectar funcionalidad
     - _Requirements: 10.2, 3.3, 12.1_
 
-- [ ] 14. Sprint Management Integration
+- [x] 14. Sprint Management Integration
   **CRITICAL**: NO crear nuevas páginas de frontend. Toda la funcionalidad de sprints ya está implementada en App.tsx. Solo conectar con backend.
   
-  - [ ] 14.1 Connect existing sprint functionality to backend APIs
+  - [x] 14.1 Connect existing sprint functionality to backend APIs
     - Replace mock data in AppContext with real API calls using sprintService
     - Connect existing SprintsList component (línea ~2440 en App.tsx) to backend getSprints API
     - Connect existing sprint creation functionality to backend createSprint API
@@ -281,7 +281,7 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - **NO CREAR NUEVAS PÁGINAS** - usar componentes existentes
     - _Requirements: 4.1, 4.2, 4.4, 4.5_
 
-  - [ ] 14.2 Integrate existing sprint planning features with backend
+  - [x] 14.2 Integrate existing sprint planning features with backend
     - Connect existing BacklogPickerModal (línea ~1050 en App.tsx) to backend APIs
     - Integrate existing issue assignment to sprints with backend addIssuesToSprint API
     - Connect existing sprint goal setting to backend updateSprint API

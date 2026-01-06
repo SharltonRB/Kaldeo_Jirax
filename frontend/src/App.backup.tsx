@@ -447,7 +447,7 @@ const AppProviderContent: React.FC<{
 
   const startSprint = async (sprintId: string) => {
     try {
-      await startSprintMutation.mutateAsync(parseInt(sprintId));
+      await startSprintMutation.mutateAsync({ id: parseInt(sprintId) });
     } catch (error: any) {
       console.error('Failed to start sprint:', error);
       alert(`Error starting sprint: ${error?.message || 'Unknown error'}`);

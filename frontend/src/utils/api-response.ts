@@ -84,7 +84,7 @@ export const mapSprintToFrontend = (sprint: BackendTypes.Sprint): FrontendSprint
   startDate: sprint.startDate,
   endDate: sprint.endDate,
   status: sprint.status as 'PLANNED' | 'ACTIVE' | 'COMPLETED',
-  goal: undefined, // Not in backend Sprint DTO yet
+  goal: sprint.goal,
 });
 
 export const mapIssueToFrontend = (issue: BackendTypes.Issue): FrontendIssue => {
@@ -211,6 +211,7 @@ export const mapSprintToBackend = (sprint: Partial<FrontendSprint>): BackendType
   name: sprint.name || '',
   startDate: sprint.startDate || '',
   endDate: sprint.endDate || '',
+  goal: sprint.goal,
 });
 
 export const mapCommentToBackend = (comment: Partial<FrontendComment>): BackendTypes.CreateCommentRequest => ({
@@ -256,42 +257,85 @@ export const mapLabelsToFrontend = (labels: BackendTypes.Label[]): FrontendLabel
 // Error handling utility
 export const handleApiError = (error: any): string => {
   // Handle ApiError format from our client interceptor
-  if (error?.message) {
-    // Check for authentication-related errors and provide user-friendly messages
-    if (error.status === 401 || error.status === 400) {
-      // Common authentication error messages that should be user-friendly
-      const message = error.message.toLowerCase();
-      if (message.includes('invalid credentials') || 
-          message.includes('bad credentials') ||
-          message.includes('authentication failed') ||
-          message.includes('wrong password') ||
-          message.includes('user not found') ||
-          message.includes('incorrect') ||
-          error.status === 401) {
-        return 'Credenciales incorrectas. Por favor, verifica tu email y contraseña.';
-      }
+  if (error?.message && error?.status) {
+    const message = error.message.toLowerCase();
+    const status = error.status;
+    
+    // Handle specific error cases with clear English messages
+    switch (status) {
+      case 400:
+        if (message.includes('email') && message.includes('invalid')) {
+          return 'Please enter a valid email address.';
+        }
+        if (message.includes('password')) {
+          return 'Password must be at least 6 characters long.';
+        }
+        if (message.includes('name') || message.includes('required')) {
+          return 'All required fields must be filled.';
+        }
+        return 'Invalid input. Please check your information and try again.';
+        
+      case 401:
+        if (message.includes('invalid credentials') || 
+            message.includes('bad credentials') ||
+            message.includes('authentication failed') ||
+            message.includes('wrong password') ||
+            message.includes('incorrect')) {
+          return 'Invalid email or password. Please check your credentials.';
+        }
+        return 'Authentication failed. Please check your credentials.';
+        
+      case 409:
+        if (message.includes('email') || message.includes('already exists') || message.includes('duplicate')) {
+          return 'An account with this email already exists. Please use a different email or try logging in.';
+        }
+        return 'This information is already in use. Please try with different details.';
+        
+      case 422:
+        return 'Invalid data format. Please check your input and try again.';
+        
+      case 500:
+        return 'Server error. Please try again later.';
+        
+      case 503:
+        return 'Service temporarily unavailable. Please try again later.';
+        
+      default:
+        // Return the original message if it's already in English and clear
+        if (error.message && !message.includes('credenciales') && !message.includes('contraseña')) {
+          return error.message;
+        }
+        return 'An unexpected error occurred. Please try again.';
     }
-    return error.message;
   }
   
-  // Fallback for other error formats
+  // Handle legacy error formats
   if (error?.response?.data?.message) {
+    const message = error.response.data.message.toLowerCase();
+    const status = error.response.status;
+    
+    if (status === 409 && (message.includes('email') || message.includes('already exists'))) {
+      return 'An account with this email already exists. Please use a different email or try logging in.';
+    }
+    
     return error.response.data.message;
   }
   
-  // Handle HTTP status codes
+  // Handle HTTP status codes without detailed messages
   if (error?.response?.status) {
     switch (error.response.status) {
       case 401:
-        return 'Credenciales incorrectas. Por favor, verifica tu email y contraseña.';
+        return 'Invalid email or password. Please check your credentials.';
       case 400:
-        return 'Datos inválidos. Por favor, verifica la información ingresada.';
+        return 'Invalid input. Please check your information and try again.';
+      case 409:
+        return 'An account with this email already exists. Please use a different email or try logging in.';
       case 500:
-        return 'Error interno del servidor. Por favor, intenta más tarde.';
+        return 'Server error. Please try again later.';
       default:
-        return 'Ha ocurrido un error inesperado.';
+        return 'An unexpected error occurred. Please try again.';
     }
   }
   
-  return 'Ha ocurrido un error inesperado.';
+  return 'An unexpected error occurred. Please try again.';
 };

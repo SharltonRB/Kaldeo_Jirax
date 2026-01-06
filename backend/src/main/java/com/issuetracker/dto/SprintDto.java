@@ -22,16 +22,17 @@ public class SprintDto {
     @Size(max = 100, message = "Sprint name must not exceed 100 characters")
     private String name;
 
-    @NotNull(message = "Start date is required")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
-    @NotNull(message = "End date is required")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
     @NotNull(message = "Sprint status is required")
     private SprintStatus status;
+
+    @Size(max = 500, message = "Sprint goal must not exceed 500 characters")
+    private String goal;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private Instant createdAt;
@@ -52,6 +53,18 @@ public class SprintDto {
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
+    public SprintDto(Long id, String name, LocalDate startDate, LocalDate endDate, 
+                    SprintStatus status, String goal, Instant createdAt, Instant updatedAt) {
+        this.id = id;
+        this.name = name;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
+        this.goal = goal;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -95,6 +108,14 @@ public class SprintDto {
 
     public void setStatus(SprintStatus status) {
         this.status = status;
+    }
+
+    public String getGoal() {
+        return goal;
+    }
+
+    public void setGoal(String goal) {
+        this.goal = goal;
     }
 
     public Instant getCreatedAt() {
