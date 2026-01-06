@@ -40,13 +40,15 @@ public class Sprint {
     @Column(nullable = false)
     private String name;
 
-    @NotNull
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "start_date")
     private LocalDate startDate;
 
-    @NotNull
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date")
     private LocalDate endDate;
+
+    @Size(max = 500)
+    @Column(name = "goal", length = 500)
+    private String goal;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -72,6 +74,14 @@ public class Sprint {
         this.name = name;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    public Sprint(User user, String name, LocalDate startDate, LocalDate endDate, String goal) {
+        this.user = user;
+        this.name = name;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.goal = goal;
     }
 
     // Getters and Setters
@@ -121,6 +131,14 @@ public class Sprint {
 
     public void setStatus(SprintStatus status) {
         this.status = status;
+    }
+
+    public String getGoal() {
+        return goal;
+    }
+
+    public void setGoal(String goal) {
+        this.goal = goal;
     }
 
     public Instant getCreatedAt() {

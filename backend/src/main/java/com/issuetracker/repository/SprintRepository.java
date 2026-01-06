@@ -93,9 +93,7 @@ public interface SprintRepository extends JpaRepository<Sprint, Long> {
      */
     @Query("SELECT s FROM Sprint s WHERE s.user = :user AND " +
            "(:excludeId IS NULL OR s.id != :excludeId) AND " +
-           "((s.startDate <= :startDate AND s.endDate >= :startDate) OR " +
-           "(s.startDate <= :endDate AND s.endDate >= :endDate) OR " +
-           "(s.startDate >= :startDate AND s.endDate <= :endDate))")
+           "((s.startDate < :endDate AND s.endDate > :startDate))")
     List<Sprint> findOverlappingSprints(@Param("user") User user,
                                        @Param("startDate") LocalDate startDate,
                                        @Param("endDate") LocalDate endDate,

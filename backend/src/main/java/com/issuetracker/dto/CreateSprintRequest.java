@@ -27,6 +27,9 @@ public class CreateSprintRequest {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
+    @Size(max = 500, message = "Sprint goal must not exceed 500 characters")
+    private String goal;
+
     // Constructors
     public CreateSprintRequest() {}
 
@@ -34,6 +37,13 @@ public class CreateSprintRequest {
         this.name = name;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    public CreateSprintRequest(String name, LocalDate startDate, LocalDate endDate, String goal) {
+        this.name = name;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.goal = goal;
     }
 
     // Getters and Setters
@@ -61,12 +71,21 @@ public class CreateSprintRequest {
         this.endDate = endDate;
     }
 
+    public String getGoal() {
+        return goal;
+    }
+
+    public void setGoal(String goal) {
+        this.goal = goal;
+    }
+
     @Override
     public String toString() {
         return "CreateSprintRequest{" +
                 "name='" + name + '\'' +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
+                ", goal='" + goal + '\'' +
                 '}';
     }
 }

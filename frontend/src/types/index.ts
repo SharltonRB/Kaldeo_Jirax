@@ -24,6 +24,7 @@ export interface Sprint {
   startDate: string; // LocalDate format: yyyy-MM-dd
   endDate: string;   // LocalDate format: yyyy-MM-dd
   status: SprintStatus;
+  goal?: string;
   createdAt: string;
   updatedAt: string;
   issueCount?: number;
@@ -172,6 +173,7 @@ export interface CreateSprintRequest {
   name: string;
   startDate: string;
   endDate: string;
+  goal?: string;
 }
 
 export interface UpdateSprintRequest {
@@ -179,6 +181,7 @@ export interface UpdateSprintRequest {
   startDate?: string;
   endDate?: string;
   status?: SprintStatus;
+  goal?: string;
 }
 
 export interface CreateCommentRequest {
@@ -208,6 +211,13 @@ export interface DashboardMetrics {
   issuesByStatus: Record<IssueStatus, number>;
   issuesByPriority: Record<Priority, number>;
   recentIssues: Issue[];
+}
+
+// Sprint activation response
+export interface SprintActivationResponse {
+  sprint: Sprint;
+  updatedIssueIds: number[];
+  movedIssuesCount: number;
 }
 
 // Pagination

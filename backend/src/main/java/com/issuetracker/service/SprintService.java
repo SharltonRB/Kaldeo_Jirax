@@ -2,6 +2,7 @@ package com.issuetracker.service;
 
 import com.issuetracker.dto.CreateSprintRequest;
 import com.issuetracker.dto.SprintDto;
+import com.issuetracker.dto.SprintActivationResponse;
 import com.issuetracker.dto.UpdateSprintRequest;
 import com.issuetracker.entity.*;
 import com.issuetracker.exception.InvalidSprintOperationException;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,10 +33,12 @@ public class SprintService {
 
     private final SprintRepository sprintRepository;
     private final IssueRepository issueRepository;
+    private final AuditService auditService;
 
-    public SprintService(SprintRepository sprintRepository, IssueRepository issueRepository) {
+    public SprintService(SprintRepository sprintRepository, IssueRepository issueRepository, AuditService auditService) {
         this.sprintRepository = sprintRepository;
         this.issueRepository = issueRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -60,7 +64,7 @@ public class SprintService {
         }
 
         // Create sprint
-        Sprint sprint = new Sprint(user, request.getName(), request.getStartDate(), request.getEndDate());
+        Sprint sprint = new Sprint(user, request.getName(), request.getStartDate(), request.getEndDate(), request.getGoal());
         Sprint savedSprint = sprintRepository.save(sprint);
 
         logger.info("✅ Created sprint '{}' (ID: {}) for user: {}", 
@@ -99,6 +103,7 @@ public class SprintService {
         sprint.setName(request.getName());
         sprint.setStartDate(request.getStartDate());
         sprint.setEndDate(request.getEndDate());
+        sprint.setGoal(request.getGoal());
 
         Sprint updatedSprint = sprintRepository.save(sprint);
 
@@ -113,10 +118,24 @@ public class SprintService {
      *
      * @param sprintId the sprint ID
      * @param user the sprint owner
-     * @return the activated sprint DTO
+     * @return the sprint activation response with updated sprint and affected issues
      * @throws InvalidSprintOperationException if another sprint is already active
      */
-    public SprintDto activateSprint(Long sprintId, User user) {
+    public SprintActivationResponse activateSprint(Long sprintId, User user) {
+        return activateSprint(sprintId, user, null, null);
+    }
+
+    /**
+     * Activates a sprint with optional date updates, ensuring only one active sprint per user.
+     *
+     * @param sprintId the sprint ID
+     * @param user the sprint owner
+     * @param newStartDate optional new start date
+     * @param newEndDate optional new end date
+     * @return the sprint activation response with updated sprint and affected issues
+     * @throws InvalidSprintOperationException if another sprint is already active
+     */
+    public SprintActivationResponse activateSprint(Long sprintId, User user, LocalDate newStartDate, LocalDate newEndDate) {
         logger.info("🚀 Activating sprint {} for user: {}", sprintId, user.getEmail());
 
         Sprint sprint = sprintRepository.findByIdAndUser(sprintId, user)
@@ -129,13 +148,83 @@ public class SprintService {
             throw InvalidSprintOperationException.activeSprintExists();
         }
 
+        // Update dates if provided
+        if (newStartDate != null && newEndDate != null) {
+            logger.info("📅 Updating sprint dates: {} to {} -> {} to {}", 
+                       sprint.getStartDate(), sprint.getEndDate(), newStartDate, newEndDate);
+            
+            sprint.setStartDate(newStartDate);
+            sprint.setEndDate(newEndDate);
+            
+            // Resolve conflicts with planned sprints
+            resolveSprintConflicts(user, sprintId, newStartDate, newEndDate);
+        }
+
         sprint.setStatus(SprintStatus.ACTIVE);
         Sprint activatedSprint = sprintRepository.save(sprint);
 
-        logger.info("✅ Activated sprint '{}' (ID: {}) for user: {}", 
-                   activatedSprint.getName(), activatedSprint.getId(), user.getEmail());
+        // Move all BACKLOG issues in this sprint to SELECTED_FOR_DEVELOPMENT
+        List<Issue> sprintIssues = issueRepository.findByUserAndSprint(user, activatedSprint);
+        logger.info("🔍 Found {} issues in sprint {} for user {}", sprintIssues.size(), sprintId, user.getEmail());
+        
+        List<Long> updatedIssueIds = new ArrayList<>();
+        int movedIssuesCount = 0;
+        for (Issue issue : sprintIssues) {
+            logger.debug("📋 Processing issue {} with status {}", issue.getId(), issue.getStatus());
+            if (issue.getStatus() == IssueStatus.BACKLOG) {
+                logger.info("🔄 Moving issue {} from BACKLOG to SELECTED_FOR_DEVELOPMENT", issue.getId());
+                issue.setStatus(IssueStatus.SELECTED_FOR_DEVELOPMENT);
+                issueRepository.save(issue);
+                updatedIssueIds.add(issue.getId());
+                movedIssuesCount++;
+                
+                // Log the status change for audit
+                auditService.logStatusChange(issue, user, IssueStatus.BACKLOG, IssueStatus.SELECTED_FOR_DEVELOPMENT);
+            }
+        }
 
-        return convertToDto(activatedSprint);
+        logger.info("✅ Activated sprint '{}' (ID: {}) for user: {} and moved {} issues to SELECTED", 
+                   activatedSprint.getName(), activatedSprint.getId(), user.getEmail(), movedIssuesCount);
+
+        return new SprintActivationResponse(convertToDto(activatedSprint), updatedIssueIds, movedIssuesCount);
+    }
+
+    /**
+     * Resolves conflicts with planned sprints by clearing their dates if they overlap.
+     *
+     * @param user the user
+     * @param excludeSprintId the sprint ID to exclude from conflict resolution
+     * @param newStartDate the new start date
+     * @param newEndDate the new end date
+     */
+    private void resolveSprintConflicts(User user, Long excludeSprintId, LocalDate newStartDate, LocalDate newEndDate) {
+        logger.info("🔍 Checking for sprint conflicts between {} and {}", newStartDate, newEndDate);
+        
+        // Find overlapping planned sprints
+        List<Sprint> overlappingSprints = sprintRepository.findOverlappingSprints(
+                user, newStartDate, newEndDate, excludeSprintId);
+        
+        List<Sprint> conflictingSprints = overlappingSprints.stream()
+                .filter(s -> s.getStatus() == SprintStatus.PLANNED)
+                .toList();
+        
+        if (!conflictingSprints.isEmpty()) {
+            logger.info("⚠️ Found {} conflicting planned sprints, clearing their dates", conflictingSprints.size());
+            
+            for (Sprint conflictingSprint : conflictingSprints) {
+                logger.info("📅 Clearing dates for sprint '{}' (ID: {}) due to conflict", 
+                           conflictingSprint.getName(), conflictingSprint.getId());
+                
+                // Clear the dates but keep the sprint
+                conflictingSprint.setStartDate(null);
+                conflictingSprint.setEndDate(null);
+                sprintRepository.save(conflictingSprint);
+                
+                // Log the conflict resolution
+                auditService.logSprintStatusChange(conflictingSprint, user, 
+                    SprintStatus.PLANNED, SprintStatus.PLANNED);
+            }
+        }
     }
 
     /**
@@ -329,6 +418,7 @@ public class SprintService {
                 sprint.getStartDate(),
                 sprint.getEndDate(),
                 sprint.getStatus(),
+                sprint.getGoal(),
                 sprint.getCreatedAt(),
                 sprint.getUpdatedAt()
         );

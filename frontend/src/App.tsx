@@ -32,12 +32,15 @@ Check,
 Zap,
 Rocket,
 RotateCcw,
-Archive} from 'lucide-react';
+Archive,
+Eye,
+EyeOff} from 'lucide-react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useAppProjects } from '@/hooks/useAppProjects';
 import { useIssues, useCreateIssue, useUpdateIssue, useUpdateIssueStatus, useDeleteIssue } from '@/hooks/useIssues';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useStartSprint, useCompleteSprint } from '@/hooks/useSprints';
 import { useLabels } from '@/hooks/useLabels';
+import SprintCalendar from '@/components/ui/SprintCalendar';
 
 /***
  * =========================================================================================
@@ -400,8 +403,21 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const startSprint = async (sprintId: string, newStartDate?: string, newEndDate?: string) => {
     try {
+      console.log('🔍 DEBUG: startSprint called with:', { sprintId, newStartDate, newEndDate });
+      
       // Use the dedicated start sprint mutation
-      await startSprintMutation.mutateAsync(parseInt(sprintId));
+      const params = { id: parseInt(sprintId) };
+      if (newStartDate && newEndDate) {
+        // Convert ISO strings to date-only format for backend
+        const startDateOnly = newStartDate.split('T')[0];
+        const endDateOnly = newEndDate.split('T')[0];
+        Object.assign(params, { newStartDate: startDateOnly, newEndDate: endDateOnly });
+        console.log('🔍 DEBUG: params with dates:', params);
+      } else {
+        console.log('🔍 DEBUG: params without dates:', params);
+      }
+      
+      await startSprintMutation.mutateAsync(params);
     } catch (error) {
       console.error('Failed to start sprint:', error);
     }
@@ -409,8 +425,39 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const completeSprint = async (sprintId: string) => {
     try {
-      // Use the dedicated complete sprint mutation
+      // First, move all non-DONE issues back to backlog
+      const sprintIssues = issues.filter(issue => 
+        issue.sprintId === sprintId && issue.status !== 'DONE'
+      );
+      
+      console.log(`Found ${sprintIssues.length} incomplete issues to move to backlog`);
+      
+      // Update each non-completed issue to move back to backlog
+      for (const issue of sprintIssues) {
+        try {
+          console.log(`Moving issue ${issue.key} from ${issue.status} to BACKLOG`);
+          
+          // First update the status to BACKLOG
+          await updateIssueStatus(issue.id, 'BACKLOG');
+          
+          // Then update the full issue to remove sprint assignment
+          const updatedIssue: Issue = {
+            ...issue,
+            status: 'BACKLOG',
+            sprintId: undefined // Remove from sprint
+          };
+          await updateIssue(updatedIssue);
+          
+        } catch (error) {
+          console.error(`Failed to move issue ${issue.key} to backlog:`, error);
+        }
+      }
+      
+      // Then complete the sprint
       await completeSprintMutation.mutateAsync(parseInt(sprintId));
+      
+      console.log(`Sprint ${sprintId} completed successfully. ${sprintIssues.length} issues moved to backlog.`);
+      
     } catch (error) {
       console.error('Failed to complete sprint:', error);
     }
@@ -527,6 +574,43 @@ const GlassInput = (props: any) => (
       ${props.className}`}
   />
 );
+
+const GlassPasswordInput = ({ value, onChange, placeholder, required }: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  required?: boolean;
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="relative">
+      <input
+        type={showPassword ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+        className={`w-full px-4 py-3 pr-12 rounded-2xl outline-none
+          bg-white/40 dark:bg-[#020617]/50
+          border border-gray-200 dark:border-white/10
+          focus:border-blue-500/50 focus:bg-white/60 dark:focus:bg-[#020617]/80
+          placeholder-gray-500 dark:placeholder-gray-500
+          text-gray-800 dark:text-white
+          transition-all duration-200
+          shadow-sm`}
+      />
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+        title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+      >
+        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+      </button>
+    </div>
+  );
+};
 
 const GlassTextArea = React.forwardRef<HTMLTextAreaElement, any>((props, ref) => (
   <textarea 
@@ -787,55 +871,91 @@ const SprintActivationModal = ({ isOpen, onClose, onConfirm, sprint }: { isOpen:
   const twoWeeksLaterStr = twoWeeksLater.toISOString().split('T')[0];
 
   const [endDate, setEndDate] = useState(twoWeeksLaterStr);
+  const [selectingDateType, setSelectingDateType] = useState<'start' | 'end'>('end');
+
+  // Handle date selection from calendar
+  const handleDateSelect = (date: string, type: 'start' | 'end') => {
+    if (type === 'end') {
+      setEndDate(date);
+    }
+    // Start date is always today, so we don't need to handle it
+  };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
       {/* Backdrop blur effect */}
       <div className="absolute inset-0 backdrop-blur-md bg-white/10 dark:bg-black/10"></div>
       
       {/* Modal content */}
-      <div className="relative">
-        <GlassCard className="w-full max-w-md p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+      <div className="relative w-full max-w-4xl my-8">
+        <GlassCard className="w-full p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
+          {/* Header */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <h3 className="text-xl font-bold dark:text-white">Update Sprint Dates</h3>
+            <p className="text-sm text-gray-500 mt-2">The planned start date does not match today. Please adjust the end date.</p>
           </div>
-          <h3 className="text-xl font-bold dark:text-white">Update Sprint Dates</h3>
-          <p className="text-sm text-gray-500 mt-2">The planned start date does not match today.</p>
-        </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-xl p-4 mb-6 text-left space-y-4">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">New Start Date (Today)</label>
-            <div className="font-mono text-gray-800 dark:text-white font-bold">{todayStr}</div>
-          </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">End Date (Estimated)</label>
-            <GlassInput 
-              type="date" 
-              value={endDate} 
-              onChange={(e: any) => setEndDate(e.target.value)} 
-              className="bg-white dark:bg-black/20"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">Automatically calculated to 2 weeks, but you can modify it.</p>
-          </div>
-        </div>
+          {/* Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* LEFT: Date Information */}
+            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-xl p-4 space-y-4 h-fit">
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">New Start Date (Today)</label>
+                <div className="font-mono text-gray-800 dark:text-white font-bold text-lg">{todayStr}</div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Selected End Date</label>
+                <div className="font-mono text-gray-800 dark:text-white font-bold text-lg">
+                  {endDate ? new Date(endDate).toLocaleDateString() : 'Not selected'}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Select an end date from the calendar on the right.</p>
+              </div>
+              {endDate && (
+                <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
+                  <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Sprint Duration</label>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    {Math.ceil((new Date(endDate).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24))} days
+                  </div>
+                </div>
+              )}
+            </div>
 
-        <div className="flex gap-3">
-          <button 
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors font-medium text-sm"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={() => onConfirm(endDate)}
-            className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all font-medium text-sm"
-          >
-            Confirm & Start
-          </button>
-        </div>
-      </GlassCard>
+            {/* RIGHT: CALENDAR */}
+            <div className="flex flex-col">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Select End Date</label>
+              <div className="flex-1 min-h-0">
+                <SprintCalendar
+                  selectedStartDate={todayStr}
+                  selectedEndDate={endDate}
+                  onDateSelect={handleDateSelect}
+                  sprints={[]} // Empty array since we don't need to show other sprints in this context
+                  selectingType={selectingDateType}
+                  onSelectingTypeChange={setSelectingDateType}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Buttons */}
+          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
+            <button 
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors font-medium text-sm"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => onConfirm(endDate)}
+              disabled={!endDate}
+              className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white shadow-lg shadow-blue-500/20 transition-all font-medium text-sm"
+            >
+              Confirm & Start Sprint
+            </button>
+          </div>
+        </GlassCard>
       </div>
     </div>
   );
@@ -1583,6 +1703,7 @@ const IssueDetailModal = () => {
                   {sprints.filter(s => s.status !== 'COMPLETED').map(sprint => (
                     <option key={sprint.id} value={sprint.id}>
                       {sprint.status === 'ACTIVE' ? '🟢 ' : '📅 '} {sprint.name}
+                      {(!sprint.startDate || !sprint.endDate) ? ' (Dates not set)' : ''}
                     </option>
                   ))}
                 </select>
@@ -1692,9 +1813,11 @@ const AuthView = () => {
   const { theme, toggleTheme } = useApp();
   const { login, register, isLoading, error, clearError } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
+  
+  // Recuperar el último email usado del localStorage
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    email: localStorage.getItem('lastLoginEmail') || '',
     password: ''
   });
 
@@ -1710,6 +1833,9 @@ const AuthView = () => {
           password: formData.password
         });
       } else {
+        // Guardar el email en localStorage antes del login
+        localStorage.setItem('lastLoginEmail', formData.email);
+        
         await login({
           email: formData.email,
           password: formData.password
@@ -1774,8 +1900,7 @@ const AuthView = () => {
             onChange={(e: any) => handleInputChange('email', e.target.value)}
             required 
           />
-          <GlassInput 
-            type="password" 
+          <GlassPasswordInput 
             placeholder="Password" 
             value={formData.password}
             onChange={(e: any) => handleInputChange('password', e.target.value)}
@@ -2457,6 +2582,7 @@ const SprintsList = () => {
   const [showBacklogPicker, setShowBacklogPicker] = useState(false);
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectingDateType, setSelectingDateType] = useState<'start' | 'end'>('start');
 
   const active = sprints.filter(s => s.status === 'ACTIVE');
   const planned = sprints.filter(s => s.status === 'PLANNED');
@@ -2500,6 +2626,13 @@ const SprintsList = () => {
   const handleActivateSprintClick = () => {
     if (!editingSprint) return;
 
+    // Check if there's already an active sprint
+    const activeSprint = sprints.find(sprint => sprint.status === 'ACTIVE');
+    if (activeSprint) {
+      alert(`Cannot start a new sprint while "${activeSprint.name}" is still active. Please complete the current sprint first.`);
+      return;
+    }
+
     const today = new Date().toISOString().split('T')[0];
     const sprintStart = editingSprint.startDate.split('T')[0];
 
@@ -2515,6 +2648,14 @@ const SprintsList = () => {
 
   const handleConfirmActivation = (newEndDate: string) => {
     if (!editingSprint) return;
+
+    // Check if there's already an active sprint
+    const activeSprint = sprints.find(sprint => sprint.status === 'ACTIVE');
+    if (activeSprint) {
+      alert(`Cannot start a new sprint while "${activeSprint.name}" is still active. Please complete the current sprint first.`);
+      setShowActivationModal(false);
+      return;
+    }
 
     const today = new Date().toISOString(); // Full ISO for DB
     // Fix endDate format just in case it is simple date
@@ -2532,6 +2673,26 @@ const SprintsList = () => {
       deleteSprint(editingSprint.id);
       setEditingSprint(null);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDateSelect = (date: string, type: 'start' | 'end') => {
+    if (type === 'start') {
+      setNewSprint({ ...newSprint, startDate: date });
+      // Auto-switch to end date selection after selecting start date
+      setSelectingDateType('end');
+    } else {
+      setNewSprint({ ...newSprint, endDate: date });
+    }
+  };
+
+  const handleEditDateSelect = (date: string, type: 'start' | 'end') => {
+    if (!editingSprint) return;
+    
+    if (type === 'start') {
+      handleUpdateSprint({ startDate: date });
+    } else {
+      handleUpdateSprint({ endDate: date });
     }
   };
 
@@ -2602,41 +2763,85 @@ const SprintsList = () => {
       {/* CREATE SPRINT MODAL */}
       {showCreateModal && (
         <div className="absolute inset-0 z-[50] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <GlassCard className="w-full max-w-lg p-6 bg-white/80 dark:bg-[#09090b]/80 border-white/20 shadow-2xl">
-            <h3 className="text-xl font-bold mb-4 dark:text-white">Plan New Sprint</h3>
-            <div className="space-y-4">
-              <GlassInput 
-                placeholder="Sprint Name" 
-                value={newSprint.name} 
-                onChange={(e:any) => setNewSprint({...newSprint, name: e.target.value})} 
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
-                  <GlassInput 
-                    type="date" 
-                    value={newSprint.startDate} 
-                    onChange={(e:any) => setNewSprint({...newSprint, startDate: e.target.value})} 
-                  />
+          <GlassCard className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-white/80 dark:bg-[#09090b]/80 border-white/20 shadow-2xl">
+            <div className="p-6 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
+              <h3 className="text-xl font-bold dark:text-white">Plan New Sprint</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* LEFT: FORM */}
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Sprint Name</label>
+                    <GlassInput 
+                      placeholder="Enter sprint name" 
+                      value={newSprint.name} 
+                      onChange={(e:any) => setNewSprint({...newSprint, name: e.target.value})} 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Sprint Goal</label>
+                    <GlassInput 
+                      placeholder="What do you want to achieve? (Optional)" 
+                      value={newSprint.goal} 
+                      onChange={(e:any) => setNewSprint({...newSprint, goal: e.target.value})} 
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Selected Dates</label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-white/30 dark:bg-white/10 rounded-xl border border-white/20">
+                          <div className="text-xs text-gray-500 mb-1">Start Date</div>
+                          <div className="font-medium text-gray-800 dark:text-white">
+                            {newSprint.startDate ? new Date(newSprint.startDate).toLocaleDateString() : 'Not selected'}
+                          </div>
+                        </div>
+                        <div className="p-3 bg-white/30 dark:bg-white/10 rounded-xl border border-white/20">
+                          <div className="text-xs text-gray-500 mb-1">End Date</div>
+                          <div className="font-medium text-gray-800 dark:text-white">
+                            {newSprint.endDate ? new Date(newSprint.endDate).toLocaleDateString() : 'Not selected'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* RIGHT: CALENDAR */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">End Date</label>
-                  <GlassInput 
-                    type="date" 
-                    value={newSprint.endDate} 
-                    onChange={(e:any) => setNewSprint({...newSprint, endDate: e.target.value})} 
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Select Sprint Dates</label>
+                  <SprintCalendar
+                    selectedStartDate={newSprint.startDate}
+                    selectedEndDate={newSprint.endDate}
+                    onDateSelect={handleDateSelect}
+                    sprints={sprints}
+                    selectingType={selectingDateType}
+                    onSelectingTypeChange={setSelectingDateType}
                   />
                 </div>
               </div>
-              <GlassInput 
-                placeholder="Sprint Goal (Optional)" 
-                value={newSprint.goal} 
-                onChange={(e:any) => setNewSprint({...newSprint, goal: e.target.value})} 
-              />
-              <div className="flex justify-end gap-2 mt-4">
-                <GlassButton variant="ghost" onClick={() => setShowCreateModal(false)}>Cancel</GlassButton>
-                <GlassButton onClick={() => { createSprint(newSprint); setShowCreateModal(false); }}>Create</GlassButton>
-              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-end gap-2">
+              <GlassButton variant="ghost" onClick={() => setShowCreateModal(false)}>Cancel</GlassButton>
+              <GlassButton 
+                onClick={() => { 
+                  createSprint(newSprint); 
+                  setShowCreateModal(false); 
+                  setNewSprint({ name: '', startDate: '', endDate: '', goal: '' });
+                  setSelectingDateType('start');
+                }}
+                disabled={!newSprint.name || !newSprint.startDate || !newSprint.endDate}
+              >
+                Create Sprint
+              </GlassButton>
             </div>
           </GlassCard>
         </div>
@@ -2645,7 +2850,7 @@ const SprintsList = () => {
       {/* EDIT SPRINT MODAL */}
       {editingSprint && (
         <div className="absolute inset-0 z-[50] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <GlassCard className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-white/80 dark:bg-[#09090b]/80 shadow-2xl border-white/20 backdrop-blur-2xl">
+          <GlassCard className="w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col bg-white/80 dark:bg-[#09090b]/80 shadow-2xl border-white/20 backdrop-blur-2xl">
             <div className="p-6 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
               <h3 className="text-xl font-bold dark:text-white">Sprint Details</h3>
               <button onClick={() => setEditingSprint(null)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
@@ -2653,64 +2858,83 @@ const SprintsList = () => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="flex-1 overflow-y-auto p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-[600px]">
                 {/* LEFT: FORM */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="lg:col-span-3 space-y-6">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Name</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Name</label>
                     <GlassInput 
                       value={editingSprint.name} 
                       onChange={(e:any) => handleUpdateSprint({ name: e.target.value })} 
                     />
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Status</label>
-                      <select 
-                        value={editingSprint.status}
-                        onChange={(e) => handleUpdateSprint({ status: e.target.value as SprintStatus })}
-                        className="w-full appearance-none bg-white/50 dark:bg-[#1e293b] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500"
-                      >
-                        <option value="PLANNED">Planned</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="COMPLETED">Completed</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Status</label>
+                    <select 
+                      value={editingSprint.status}
+                      onChange={(e) => handleUpdateSprint({ status: e.target.value as SprintStatus })}
+                      className="w-full appearance-none bg-white/50 dark:bg-[#1e293b] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500"
+                    >
+                      <option value="PLANNED">Planned</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="COMPLETED">Completed</option>
+                    </select>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
-                        <GlassInput 
-                          type="date" 
-                          value={editingSprint.startDate.split('T')[0]} 
-                          onChange={(e:any) => handleUpdateSprint({ startDate: e.target.value })} 
-                        />
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Selected Dates</label>
+                    <div className="space-y-3">
+                      <div className="p-4 bg-white/30 dark:bg-white/10 rounded-xl border border-white/20">
+                        <div className="text-xs text-gray-500 mb-1">Start Date</div>
+                        <div className="font-medium text-gray-800 dark:text-white">
+                          {editingSprint.startDate 
+                            ? new Date(editingSprint.startDate).toLocaleDateString()
+                            : 'Not set'
+                          }
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-xs text-gray-500 mb-1 block">End Date</label>
-                        <GlassInput 
-                          type="date" 
-                          value={editingSprint.endDate.split('T')[0]} 
-                          onChange={(e:any) => handleUpdateSprint({ endDate: e.target.value })} 
-                        />
+                      <div className="p-4 bg-white/30 dark:bg-white/10 rounded-xl border border-white/20">
+                        <div className="text-xs text-gray-500 mb-1">End Date</div>
+                        <div className="font-medium text-gray-800 dark:text-white">
+                          {editingSprint.endDate 
+                            ? new Date(editingSprint.endDate).toLocaleDateString()
+                            : 'Not set'
+                          }
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Goal</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Goal</label>
                     <GlassTextArea 
-                      rows={3} 
+                      rows={4} 
                       value={editingSprint.goal || ''} 
                       onChange={(e:any) => handleUpdateSprint({ goal: e.target.value })} 
+                      placeholder="What do you want to achieve in this sprint?"
+                    />
+                  </div>
+                </div>
+
+                {/* CENTER: CALENDAR */}
+                <div className="lg:col-span-4">
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Update Sprint Dates</label>
+                  <div className="h-full">
+                    <SprintCalendar
+                      selectedStartDate={editingSprint.startDate ? editingSprint.startDate.split('T')[0] : ''}
+                      selectedEndDate={editingSprint.endDate ? editingSprint.endDate.split('T')[0] : ''}
+                      onDateSelect={handleEditDateSelect}
+                      sprints={sprints.filter(s => s.id !== editingSprint.id)} // Exclude current sprint from overlap check
+                      selectingType={selectingDateType}
+                      onSelectingTypeChange={setSelectingDateType}
                     />
                   </div>
                 </div>
 
                 {/* RIGHT: ISSUES LIST */}
-                <div className="lg:col-span-2 flex flex-col h-full">
+                <div className="lg:col-span-5 flex flex-col h-full min-h-[500px]">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
                       <ListTodo className="w-5 h-5 text-blue-500" /> Issues in this Sprint
@@ -2761,14 +2985,34 @@ const SprintsList = () => {
 
             <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-between items-center">
               <div className="flex gap-2">
-                {editingSprint.status === 'PLANNED' && (
-                  <button 
-                    onClick={handleActivateSprintClick}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-lg shadow-green-500/20 font-medium transition-all active:scale-95"
-                  >
-                    <Rocket className="w-4 h-4" /> Start Sprint
-                  </button>
-                )}
+                {editingSprint.status === 'PLANNED' && (() => {
+                  const activeSprint = sprints.find(sprint => sprint.status === 'ACTIVE');
+                  const isDisabled = !!activeSprint;
+                  
+                  return (
+                    <div className="relative group">
+                      <button 
+                        onClick={handleActivateSprintClick}
+                        disabled={isDisabled}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all active:scale-95 ${
+                          isDisabled 
+                            ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' 
+                            : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20'
+                        }`}
+                      >
+                        <Rocket className="w-4 h-4" /> Start Sprint
+                      </button>
+                      
+                      {/* Tooltip for disabled state */}
+                      {isDisabled && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                          Complete "{activeSprint.name}" first
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <button 
                   onClick={() => setShowDeleteConfirm(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl font-medium transition-all active:scale-95"

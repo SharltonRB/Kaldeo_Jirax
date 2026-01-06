@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sprintService } from '@/services/api/sprint.service';
+import { issueKeys } from '@/hooks/useIssues';
 import { 
   mapSprintsToFrontend, 
   mapSprintToFrontend, 
@@ -7,6 +8,7 @@ import {
   handleApiError,
   type FrontendSprint 
 } from '@/utils/api-response';
+import type { SprintActivationResponse } from '@/types';
 
 // Query keys for React Query
 export const sprintKeys = {
@@ -90,6 +92,7 @@ export const useUpdateSprint = () => {
         startDate: data.startDate,
         endDate: data.endDate,
         status: data.status as any,
+        goal: data.goal,
       };
       const updatedSprint = await sprintService.updateSprint(id, backendData);
       return mapSprintToFrontend(updatedSprint);
@@ -140,16 +143,35 @@ export const useStartSprint = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
-      const updatedSprint = await sprintService.startSprint(id);
-      return mapSprintToFrontend(updatedSprint);
+    mutationFn: async ({ id, newStartDate, newEndDate }: { 
+      id: number; 
+      newStartDate?: string; 
+      newEndDate?: string; 
+    }) => {
+      const response = await sprintService.startSprint(id, newStartDate, newEndDate);
+      return {
+        sprint: mapSprintToFrontend(response.sprint),
+        updatedIssueIds: response.updatedIssueIds,
+        movedIssuesCount: response.movedIssuesCount
+      };
     },
-    onSuccess: (updatedSprint, id) => {
+    onSuccess: (response, { id }) => {
       // Update the specific sprint in cache
-      queryClient.setQueryData(sprintKeys.detail(id), updatedSprint);
+      queryClient.setQueryData(sprintKeys.detail(id), response.sprint);
       
       // Invalidate sprints list to ensure consistency
       queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
+      
+      // Invalidate issues list to refresh the updated issues
+      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+      
+      // Also invalidate specific issue details for updated issues
+      response.updatedIssueIds.forEach(issueId => {
+        queryClient.invalidateQueries({ queryKey: issueKeys.detail(issueId) });
+      });
+      
+      console.log(`✅ Sprint activated successfully. Moved ${response.movedIssuesCount} issues to SELECTED status.`);
     },
     onError: (error) => {
       console.error('Failed to start sprint:', error);
