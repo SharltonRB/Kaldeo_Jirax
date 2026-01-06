@@ -267,11 +267,11 @@ public class Issue {
     // Utility methods for epic hierarchy
     
     /**
-     * Checks if this issue is an epic (has no parent).
+     * Checks if this issue is an epic based on its issue type.
      * @return true if this is an epic issue
      */
     public boolean isEpic() {
-        return this.parentIssue == null;
+        return this.issueType != null && "EPIC".equals(this.issueType.getName());
     }
     
     /**

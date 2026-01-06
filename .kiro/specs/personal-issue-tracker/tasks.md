@@ -215,174 +215,220 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - **NOTE**: Backend authentication has JWT secret configuration issue - needs debugging
     - _Requirements: 1.1, 1.2, 1.4_
 
-- [ ] 12. Project Management Integration
-  - [ ] 12.1 Connect project CRUD operations
-    - Integrate project list view with backend API
-    - Connect project creation and editing forms to backend
-    - Implement project deletion with confirmation
-    - Add real-time project updates and error handling
+- [x] 12. Project Management Integration
+  **CRITICAL**: NO crear nuevas páginas de frontend. El frontend ya está completamente implementado en App.tsx con todas las funcionalidades. Solo conectar las APIs del backend con los componentes existentes.
+  
+  - [x] 12.1 Connect existing project functionality to backend APIs
+    - ✅ React Query configured and installed
+    - ✅ Project service hooks created (useProjects, useCreateProject, useDeleteProject)
+    - ✅ AppContext updated to use real API calls instead of mock data
+    - ✅ Loading states and error handling implemented in ProjectsList component
+    - ✅ Project creation and deletion connected to backend APIs
+    - ✅ Frontend integration code completed and ready for testing
+    - **ISSUE FOUND**: Backend authentication has JWT configuration problem - login returns 401 even with correct credentials
+    - **STATUS**: Frontend integration complete, backend authentication needs debugging
     - _Requirements: 2.1, 2.2, 2.4, 2.5_
 
-  - [ ] 12.2 Implement project navigation and selection
-    - Connect project selection to backend project data
-    - Add project switching functionality
-    - Implement project-based routing and state management
+  - [x] 12.2 Integrate existing project features with backend
+    - Connect existing project search functionality to backend search API
+    - Integrate existing project key validation with backend validation
+    - Connect existing issue count display to real backend data
+    - Maintain all existing UI behaviors and glass-design styling
+    - **PREGUNTAR AL USUARIO** antes de crear cualquier nueva funcionalidad de frontend
     - _Requirements: 2.3, 2.4_
 
-- [ ] 13. Issue Management Integration
-  - [ ] 13.1 Connect issue CRUD operations
-    - Integrate issue list with backend API including pagination
-    - Connect issue creation and editing forms to backend
-    - Implement issue status updates and workflow validation
-    - Add issue assignment and priority management
+- [x] 13. Issue Management Integration
+  **CRITICAL**: NO crear nuevas páginas de frontend. Todas las funcionalidades de issues ya están implementadas en App.tsx. Solo conectar con backend.
+  
+  - [x] 13.1 Connect existing issue functionality to backend APIs
+    - Replace mock data in AppContext with real API calls using issueService
+    - Connect existing CreateIssueModal (línea ~1200 en App.tsx) to backend createIssue API
+    - Connect existing IssueDetailModal (línea ~1447 en App.tsx) to backend getIssue/updateIssue APIs
+    - Integrate existing issue status changes with backend updateIssueStatus API
+    - Connect existing issue deletion with backend deleteIssue API
+    - Replace in-memory issue state with React Query for real-time updates
+    - **NO CREAR NUEVAS PÁGINAS** - usar modales y componentes existentes
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [ ] 13.2 Implement advanced issue features
-    - Connect issue search and filtering to backend
-    - Integrate issue attachments and file upload
-    - Add issue linking and dependency management
-    - Implement bulk issue operations
+  - [x] 13.2 Integrate existing advanced issue features with backend
+    - Connect existing issue search functionality to backend search API
+    - Integrate existing issue filtering (por proyecto, sprint, estado) con backend APIs
+    - Connect existing story points and priority management to backend
+    - Connect existing epic-child relationship functionality to backend
+    - Maintain all existing UI behaviors and glass-design styling
+    - **PREGUNTAR AL USUARIO** antes de crear cualquier nueva funcionalidad
     - _Requirements: 3.6, 11.1, 11.2_
 
-  - [ ] 13.3 Complete Kanban board integration
-    - Connect drag-and-drop status changes to backend API
-    - Implement real-time board updates via WebSocket or polling
-    - Add board customization and filtering
-    - Optimize performance for large issue sets
+  - [x] 13.3 Connect existing Kanban board to backend
+    - Connect existing SprintBoard component (línea ~2893 en App.tsx) to backend APIs
+    - Integrate existing drag-and-drop status changes with backend updateIssueStatus API
+    - Connect existing issue creation from board to backend createIssue API
+    - Replace mock sprint data with real backend sprint data
+    - Maintain existing 4-column layout (SELECTED, IN_PROGRESS, IN_REVIEW, DONE)
+    - **NO MODIFICAR UI EXISTENTE** - solo conectar funcionalidad
     - _Requirements: 10.2, 3.3, 12.1_
 
 - [ ] 14. Sprint Management Integration
-  - [ ] 14.1 Connect sprint CRUD operations
-    - Integrate sprint creation and configuration with backend
-    - Connect sprint planning interface to backend APIs
-    - Implement sprint activation and completion workflows
-    - Add sprint retrospective data collection
+  **CRITICAL**: NO crear nuevas páginas de frontend. Toda la funcionalidad de sprints ya está implementada en App.tsx. Solo conectar con backend.
+  
+  - [ ] 14.1 Connect existing sprint functionality to backend APIs
+    - Replace mock data in AppContext with real API calls using sprintService
+    - Connect existing SprintsList component (línea ~2440 en App.tsx) to backend getSprints API
+    - Connect existing sprint creation functionality to backend createSprint API
+    - Integrate existing sprint activation (startSprint) with backend API
+    - Connect existing sprint completion (completeSprint) with backend API
+    - Connect existing sprint editing functionality to backend updateSprint API
+    - **NO CREAR NUEVAS PÁGINAS** - usar componentes existentes
     - _Requirements: 4.1, 4.2, 4.4, 4.5_
 
-  - [ ] 14.2 Implement sprint planning features
-    - Connect issue assignment to sprints with backend validation
-    - Add sprint capacity planning and estimation
-    - Implement sprint goal setting and tracking
-    - Connect sprint burndown chart to backend metrics
+  - [ ] 14.2 Integrate existing sprint planning features with backend
+    - Connect existing BacklogPickerModal (línea ~1050 en App.tsx) to backend APIs
+    - Integrate existing issue assignment to sprints with backend addIssuesToSprint API
+    - Connect existing sprint goal setting to backend updateSprint API
+    - Connect existing sprint progress tracking to backend getSprintProgress API
+    - Maintain all existing UI behaviors (multi-select, epic expansion, etc.)
+    - **NO MODIFICAR UI EXISTENTE** - solo conectar funcionalidad
     - _Requirements: 4.3, 10.3, 8.2_
 
 - [ ] 15. Dashboard and Analytics Integration
-  - [ ] 15.1 Connect main dashboard to backend metrics
-    - Integrate project and issue summary widgets with backend
-    - Connect real-time metrics and KPI displays
-    - Implement dashboard customization and user preferences
-    - Add performance optimization with caching
+  **CRITICAL**: NO crear nuevas páginas de frontend. El Dashboard ya está completamente implementado en App.tsx. Solo conectar con backend.
+  
+  - [ ] 15.1 Connect existing dashboard to backend metrics
+    - Replace mock data in AppContext with real API calls using dashboardService
+    - Connect existing Dashboard component (línea ~1792 en App.tsx) to backend getDashboardMetrics API
+    - Integrate existing sprint summary display with backend getActiveSprintSummary API
+    - Connect existing issue statistics to real backend data
+    - Connect existing recent issues list to backend getRecentIssues API
+    - Replace in-memory calculations with backend-calculated metrics
+    - **NO CREAR NUEVOS WIDGETS** - usar componentes existentes
     - _Requirements: 8.1, 8.2, 8.3, 10.1, 12.3_
 
-  - [ ] 15.2 Implement reporting and analytics
-    - Connect chart components to backend reporting APIs
-    - Add interactive filtering and date range selection
-    - Implement report export functionality (PDF, CSV)
-    - Add scheduled report generation and email delivery
+  - [ ] 15.2 Integrate existing dashboard features with backend
+    - Connect existing search functionality to backend search APIs
+    - Integrate existing project quick access with real backend project data
+    - Connect existing issue status distribution charts to backend metrics
+    - Maintain all existing glass-design styling and animations
+    - **NO AGREGAR NUEVAS FUNCIONALIDADES** sin autorización del usuario
     - _Requirements: 8.2, 8.3, 20.1, 20.3_
 
 - [ ] 16. Label and Comment System Integration
-  - [ ] 16.1 Connect label management
-    - Integrate label CRUD operations with backend
-    - Add label color picker and icon selection
-    - Implement label filtering and search
-    - Connect label analytics and usage statistics
+  **CRITICAL**: NO crear nuevas páginas de frontend. Los sistemas de labels y comentarios ya están implementados en App.tsx. Solo conectar con backend.
+  
+  - [ ] 16.1 Connect existing label functionality to backend (SI EXISTE)
+    - Verificar si el frontend tiene funcionalidad de labels implementada
+    - Si existe, conectar con backend labelService APIs
+    - Si no existe, **PREGUNTAR AL USUARIO** antes de implementar
+    - Mantener consistencia con el diseño glass existente
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ] 16.2 Implement comment system integration
-    - Connect comment threads to backend APIs
-    - Add rich text editor for comment formatting
-    - Implement comment notifications and mentions
-    - Add comment moderation and editing history
+  - [ ] 16.2 Connect existing comment system to backend
+    - Connect existing CommentsSection component (línea ~1400 en App.tsx) to backend commentService
+    - Integrate existing comment creation with backend createComment API
+    - Connect existing comment display with backend getIssueComments API
+    - Maintain existing comment UI and markdown rendering
+    - **NO MODIFICAR UI EXISTENTE** - solo conectar funcionalidad
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [ ] 17. Audit and History Integration
-  - [ ] 17.1 Connect audit trail visualization
-    - Integrate issue history timeline with backend audit logs
-    - Add change tracking and diff visualization
-    - Implement audit log search and filtering
-    - Connect user activity tracking and reporting
+  **CRITICAL**: NO crear nuevas páginas de frontend. Solo conectar funcionalidad de auditoría si ya existe en el frontend.
+  
+  - [ ] 17.1 Connect existing audit functionality to backend (SI EXISTE)
+    - Verificar si el frontend tiene visualización de historial implementada
+    - Si existe, conectar con backend auditService APIs
+    - Si no existe, **PREGUNTAR AL USUARIO** antes de implementar nueva funcionalidad
+    - Mantener consistencia con el diseño glass existente
     - _Requirements: 7.1, 7.2, 7.3, 7.5_
 
-  - [ ] 17.2 Implement compliance and data governance
-    - Add data retention policy management interface
-    - Implement audit log export for compliance reporting
-    - Connect data anonymization and GDPR compliance features
-    - Add audit trail integrity verification
+  - [ ] 17.2 Integrate audit features only if frontend exists
+    - Solo implementar si ya existe UI para auditoría en App.tsx
+    - **NO CREAR NUEVAS INTERFACES** sin autorización del usuario
+    - Mantener todas las funcionalidades existentes intactas
     - _Requirements: 7.4, 20.2, 15.2_
 
 - [ ] 18. Performance Optimization and Monitoring
-  - [ ] 18.1 Implement frontend performance optimization
-    - Add code splitting and lazy loading for large components
-    - Implement virtual scrolling for large data sets
-    - Add service worker for offline functionality
-    - Optimize bundle size and loading performance
+  **CRITICAL**: Solo optimizar el frontend existente. NO crear nuevas páginas o funcionalidades.
+  
+  - [ ] 18.1 Optimize existing frontend performance
+    - Implement React Query for caching and optimistic updates in existing components
+    - Add loading states to existing modals and components
+    - Optimize existing large lists (projects, issues, sprints) with pagination
+    - Add error boundaries to existing component structure
+    - **NO MODIFICAR ESTRUCTURA EXISTENTE** - solo optimizar
     - _Requirements: 12.1, 19.3_
 
-  - [ ] 18.2 Connect monitoring and health checks
-    - Integrate frontend error tracking with backend monitoring
-    - Add user session tracking and analytics
-    - Implement performance metrics collection
-    - Connect real-time system health dashboard
+  - [ ] 18.2 Integrate monitoring with existing components
+    - Add error tracking to existing API calls
+    - Implement performance monitoring for existing user interactions
+    - Connect health checks to existing authentication flow
+    - **NO CREAR NUEVOS DASHBOARDS** - usar funcionalidad existente
     - _Requirements: 17.3, 18.2, 18.3_
 
-  - [ ] 18.3 Implement caching and state management optimization
-    - Add intelligent caching for API responses
-    - Implement optimistic updates for better UX
-    - Add offline data synchronization
-    - Optimize React state management and re-renders
+  - [ ] 18.3 Optimize existing state management
+    - Replace AppContext mock data with React Query cache
+    - Implement optimistic updates for existing CRUD operations
+    - Add intelligent caching for existing API calls
+    - Optimize existing React component re-renders
+    - **MANTENER TODA LA FUNCIONALIDAD EXISTENTE**
     - _Requirements: 12.3, 12.5_
 
 - [ ] 19. Security Integration and Hardening
-  - [ ] 19.1 Implement frontend security measures
-    - Add input sanitization and XSS prevention
-    - Implement CSP headers and security policies
-    - Add secure token storage and handling
-    - Connect rate limiting feedback to UI
+  **CRITICAL**: Solo fortalecer la seguridad del frontend existente. NO crear nuevas páginas.
+  
+  - [ ] 19.1 Harden existing frontend security
+    - Add input sanitization to existing forms and modals
+    - Implement CSP headers for existing application
+    - Secure existing token storage and handling in AuthContext
+    - Add rate limiting feedback to existing authentication UI
+    - **NO MODIFICAR UI EXISTENTE** - solo agregar seguridad
     - _Requirements: 15.1, 15.2, 15.4, 9.4_
 
-  - [ ] 19.2 Complete authentication and authorization
-    - Implement role-based UI component rendering
-    - Add session timeout and automatic logout
-    - Connect multi-factor authentication if implemented
-    - Add security audit logging for user actions
+  - [ ] 19.2 Enhance existing authentication and authorization
+    - Add session timeout to existing authentication flow
+    - Implement automatic logout in existing AuthContext
+    - Add security logging for existing user actions
+    - **MANTENER FUNCIONALIDAD EXISTENTE** intacta
     - _Requirements: 1.3, 1.5, 15.3, 15.5_
 
 - [ ] 20. Data Management and Export Integration
-  - [ ] 20.1 Implement data export functionality
-    - Connect user data export to backend APIs
-    - Add export progress tracking and notifications
-    - Implement selective data export options
-    - Add export scheduling and automation
+  **CRITICAL**: Solo implementar si ya existe funcionalidad de exportación en el frontend. NO crear nuevas páginas.
+  
+  - [ ] 20.1 Connect existing export functionality (SI EXISTE)
+    - Verificar si el frontend tiene funcionalidad de exportación implementada
+    - Si existe, conectar con backend APIs de exportación
+    - Si no existe, **PREGUNTAR AL USUARIO** antes de implementar
+    - Mantener consistencia con el diseño existente
     - _Requirements: 20.1, 20.3_
 
-  - [ ] 20.2 Connect backup and recovery features
-    - Add user data backup status dashboard
-    - Implement data recovery request interface
-    - Connect backup verification and integrity checks
-    - Add disaster recovery status monitoring
+  - [ ] 20.2 Integrate backup features only if frontend exists
+    - Solo implementar si ya existe UI para backup en App.tsx
+    - **NO CREAR NUEVAS INTERFACES** sin autorización del usuario
+    - Mantener todas las funcionalidades existentes intactas
     - _Requirements: 20.2, 20.4, 20.5_
 
 - [ ] 21. Comprehensive Testing and Quality Assurance
-  - [ ] 21.1 Complete end-to-end testing
-    - Test all user workflows from registration to project completion
-    - Verify data isolation and security measures across frontend-backend
-    - Add automated UI testing with Playwright or Cypress
-    - Test responsive design and accessibility compliance
+  **CRITICAL**: Probar la integración del frontend existente con el backend. NO crear nuevas funcionalidades.
+  
+  - [ ] 21.1 Test existing frontend-backend integration
+    - Test all existing user workflows (login, crear proyectos, crear issues, gestionar sprints)
+    - Verify data isolation and security measures across existing functionality
+    - Test existing responsive design and glass-design styling
+    - Validate existing modals and components work with real backend data
+    - **NO AGREGAR NUEVAS PRUEBAS** para funcionalidades no existentes
     - _Requirements: All requirements, 16.4, 19.4_
 
-  - [ ] 21.2 Performance and load testing
-    - Load test complete application with concurrent users
-    - Verify response time requirements for all user interactions
-    - Test database performance under realistic load
-    - Validate caching effectiveness and memory usage
+  - [ ] 21.2 Performance testing of existing functionality
+    - Load test existing components with real backend data
+    - Verify response times for existing user interactions
+    - Test existing search and filtering with large datasets
+    - Validate existing caching and memory usage
+    - **MANTENER RENDIMIENTO DE FUNCIONALIDAD EXISTENTE**
     - _Requirements: 12.1, 12.2_
 
-  - [ ] 21.3 Security and penetration testing
-    - Perform comprehensive security testing of integrated system
-    - Test authentication and authorization across all endpoints
-    - Verify input validation and injection prevention
-    - Test session management and token security
+  - [ ] 21.3 Security testing of existing integration
+    - Test existing authentication and authorization flows
+    - Verify existing input validation works with backend
+    - Test existing session management and token security
+    - **NO MODIFICAR FLUJOS DE SEGURIDAD EXISTENTES**
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
 
 - [ ] 22. Production Deployment and Configuration
@@ -430,12 +476,57 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - _Requirements: All requirements_
 
 - [ ] 24. Final Checkpoint - Production Ready System
+  **CRITICAL**: Validar que el frontend existente funciona completamente con el backend.
+  
   - Ensure complete frontend-backend integration is functional
-  - Verify all security, performance, and compliance requirements
-  - Confirm monitoring, backup, and disaster recovery systems
-  - Validate user documentation and support procedures
-  - System is ready for production use with full feature set
+  - Verify all existing functionality (proyectos, issues, sprints, comentarios) works with real backend data
+  - Confirm existing authentication, authorization, and data isolation work correctly
+  - Validate existing user interface maintains all glass-design styling and behaviors
+  - Verify existing modals, forms, and components work seamlessly with backend APIs
+  - **SISTEMA LISTO PARA PRODUCCIÓN** con toda la funcionalidad existente conectada
   - Ask the user if questions arise
+
+## REGLAS CRÍTICAS PARA TODOS LOS TASKS
+
+**🚨 IMPORTANTE - LEER ANTES DE CUALQUIER IMPLEMENTACIÓN:**
+
+1. **NO CREAR NUEVAS PÁGINAS DE FRONTEND**: Todo el frontend ya está implementado en App.tsx (3252 líneas). Solo conectar APIs.
+
+2. **NO MODIFICAR UI EXISTENTE**: Mantener todo el diseño glass-design, modales, componentes y styling existente.
+
+3. **PREGUNTAR ANTES DE AGREGAR**: Si necesitas crear cualquier nueva funcionalidad de frontend, **PREGUNTAR AL USUARIO PRIMERO**.
+
+4. **USAR COMPONENTES EXISTENTES**: 
+   - ProjectsList (línea ~1981)
+   - SprintsList (línea ~2440) 
+   - SprintBoard/Kanban (línea ~2893)
+   - Dashboard (línea ~1792)
+   - CreateIssueModal (línea ~1200)
+   - IssueDetailModal (línea ~1447)
+   - CommentsSection (línea ~1400)
+   - BacklogPickerModal (línea ~1050)
+
+5. **REEMPLAZAR MOCK DATA**: Cambiar AppContext mock data por React Query + API calls reales.
+
+6. **MANTENER FUNCIONALIDADES**: Todas las funcionalidades existentes deben seguir funcionando igual:
+   - Crear sprints desde SprintsList
+   - Crear issues desde tablero Y desde página de proyectos
+   - Drag & drop en Kanban
+   - Búsqueda global
+   - Tema claro/oscuro
+   - Sidebar colapsable
+   - Navegación entre issues
+   - Comentarios en issues
+   - Confirmaciones de eliminación
+
+7. **SERVICIOS YA DEFINIDOS**: Usar los servicios ya creados en `frontend/src/services/api/`:
+   - authService ✅ (ya conectado)
+   - projectService
+   - issueService  
+   - sprintService
+   - commentService
+   - labelService
+   - dashboardService
 
 ## Notes
 

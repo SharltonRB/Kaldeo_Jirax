@@ -126,8 +126,10 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
   user: User;
 }
 
@@ -163,7 +165,7 @@ export interface UpdateIssueRequest {
 }
 
 export interface StatusUpdateRequest {
-  status: IssueStatus;
+  newStatus: IssueStatus;
 }
 
 export interface CreateSprintRequest {

@@ -14,7 +14,7 @@ export const authService = {
     const response = await api.post<AuthResponse>('/auth/login', credentials);
     
     // Store tokens in localStorage
-    setTokens(response.accessToken, response.refreshToken);
+    setTokens(response.access_token, response.refresh_token);
     
     return response;
   },
@@ -26,7 +26,7 @@ export const authService = {
     const response = await api.post<AuthResponse>('/auth/register', userData);
     
     // Store tokens in localStorage
-    setTokens(response.accessToken, response.refreshToken);
+    setTokens(response.access_token, response.refresh_token);
     
     return response;
   },
@@ -40,7 +40,7 @@ export const authService = {
     });
     
     // Update stored tokens
-    setTokens(response.accessToken, response.refreshToken);
+    setTokens(response.access_token, response.refresh_token);
     
     return response;
   },
@@ -54,22 +54,9 @@ export const authService = {
 
   /**
    * Get current user profile
-   * Note: This endpoint might not be available yet in the backend
    */
   async getCurrentUser(): Promise<User> {
-    try {
-      return await api.get<User>('/auth/me');
-    } catch (error) {
-      // If endpoint doesn't exist, return a mock user for now
-      console.warn('getCurrentUser endpoint not available, using mock data');
-      return {
-        id: 1,
-        name: 'Test User',
-        email: 'test@example.com',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    }
+    return await api.get<User>('/auth/me');
   },
 
   /**

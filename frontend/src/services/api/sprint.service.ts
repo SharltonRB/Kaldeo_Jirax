@@ -68,7 +68,7 @@ class SprintApiService extends BaseApiService<Sprint, CreateSprintRequest, Updat
    * Start sprint (change status to ACTIVE)
    */
   async startSprint(id: number): Promise<Sprint> {
-    return api.put<Sprint>(`${this.baseUrl}/${id}/start`);
+    return api.post<Sprint>(`${this.baseUrl}/${id}/activate`);
   }
 
   /**
@@ -78,7 +78,7 @@ class SprintApiService extends BaseApiService<Sprint, CreateSprintRequest, Updat
     targetSprintId?: number;
     moveToBacklog?: boolean;
   }): Promise<Sprint> {
-    return api.put<Sprint>(`${this.baseUrl}/${id}/complete`, moveIncompleteIssues);
+    return api.post<Sprint>(`${this.baseUrl}/${id}/complete`, moveIncompleteIssues);
   }
 
   /**

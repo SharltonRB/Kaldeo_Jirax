@@ -66,11 +66,11 @@ apiClient.interceptors.response.use(
             refreshToken,
           });
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
-          setTokens(accessToken, newRefreshToken);
+          const { access_token, refresh_token: newRefreshToken } = response.data;
+          setTokens(access_token, newRefreshToken);
 
           // Retry the original request with new token
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
           return apiClient(originalRequest);
         } catch (refreshError) {
           // Refresh failed, clear tokens and redirect to login

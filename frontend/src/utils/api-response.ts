@@ -111,9 +111,13 @@ export const mapIssueToFrontend = (issue: BackendTypes.Issue): FrontendIssue => 
     issueType = 'EPIC';
   } else if (issue.issueTypeName) {
     const typeMap: Record<string, FrontendIssue['type']> = {
+      'STORY': 'STORY',
       'Story': 'STORY',
+      'TASK': 'TASK', 
       'Task': 'TASK',
+      'BUG': 'BUG',
       'Bug': 'BUG',
+      'EPIC': 'EPIC',
       'Epic': 'EPIC',
     };
     issueType = typeMap[issue.issueTypeName] || 'TASK';
@@ -183,9 +187,9 @@ export const mapIssueToBackend = (issue: Partial<FrontendIssue>): Partial<Backen
   // Determine issue type ID (we'll need to get this from backend or use defaults)
   const getIssueTypeId = (type?: FrontendIssue['type']): number => {
     const typeMap: Record<FrontendIssue['type'], number> = {
-      'STORY': 1,
-      'TASK': 2,
-      'BUG': 3,
+      'BUG': 1,
+      'STORY': 2,
+      'TASK': 3,
       'EPIC': 4,
     };
     return typeMap[type || 'TASK'];
@@ -229,7 +233,7 @@ export const mapStatusToBackend = (status: FrontendIssue['status']): BackendType
   };
 
   return {
-    status: statusMap[status],
+    newStatus: statusMap[status], // Backend expects "newStatus" field
   };
 };
 

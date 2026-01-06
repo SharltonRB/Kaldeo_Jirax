@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/services/api';
 import { FrontendUser, mapUserToFrontend, handleApiError } from '@/utils/api-response';
 import type { LoginRequest, RegisterRequest } from '@/types';
@@ -24,6 +25,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<FrontendUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!user;
 
@@ -52,6 +54,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
       
+      // Clear all cached data before login
+      queryClient.clear();
+      
       const response = await authService.login(credentials);
       setUser(mapUserToFrontend(response.user));
     } catch (error) {
@@ -68,6 +73,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
       
+      // Clear all cached data before register
+      queryClient.clear();
+      
       const response = await authService.register(userData);
       setUser(mapUserToFrontend(response.user));
     } catch (error) {
@@ -83,6 +91,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authService.logout();
     setUser(null);
     setError(null);
+    
+    // Clear all cached data on logout
+    queryClient.clear();
   };
 
   const clearError = (): void => {

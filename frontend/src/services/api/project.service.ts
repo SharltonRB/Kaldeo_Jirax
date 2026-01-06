@@ -1,4 +1,5 @@
 import { BaseApiService } from './base.service';
+import { api } from './client';
 import { 
   Project, 
   CreateProjectRequest, 
@@ -11,10 +12,22 @@ class ProjectApiService extends BaseApiService<Project, CreateProjectRequest, Up
   protected baseUrl = '/projects';
 
   /**
-   * Get projects with optional filtering
+   * Get projects with optional filtering and search
    */
   async getProjects(params?: PageRequest & { search?: string }): Promise<PageResponse<Project>> {
-    return this.getAll(params);
+    const searchParams = new URLSearchParams();
+    
+    if (params?.page !== undefined) searchParams.append('page', params.page.toString());
+    if (params?.size !== undefined) searchParams.append('size', params.size.toString());
+    if (params?.sort) searchParams.append('sort', params.sort);
+    if (params?.search && params.search.trim()) {
+      searchParams.append('search', params.search.trim());
+    }
+    
+    const queryString = searchParams.toString();
+    const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
+    
+    return api.get<PageResponse<Project>>(url);
   }
 
   /**
@@ -49,14 +62,12 @@ class ProjectApiService extends BaseApiService<Project, CreateProjectRequest, Up
    * Check if project key is available
    */
   async checkProjectKeyAvailability(key: string): Promise<{ available: boolean }> {
-    // This endpoint might not exist yet, so we'll implement a basic check
     try {
-      const projects = await this.getProjects({ size: 1000 }); // Get all projects
-      const keyExists = projects.content.some(project => project.key === key);
-      return { available: !keyExists };
+      const available = await api.get<boolean>(`${this.baseUrl}/key-available/${encodeURIComponent(key)}`);
+      return { available };
     } catch (error) {
       console.warn('Project key availability check failed:', error);
-      return { available: true }; // Assume available if check fails
+      return { available: false }; // Assume not available if check fails for safety
     }
   }
 }

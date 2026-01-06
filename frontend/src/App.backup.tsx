@@ -38,6 +38,8 @@ import { useAppProjects } from '@/hooks/useAppProjects';
 import { useIssues, useCreateIssue, useUpdateIssue, useUpdateIssueStatus, useDeleteIssue } from '@/hooks/useIssues';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useStartSprint, useCompleteSprint } from '@/hooks/useSprints';
 import { useLabels } from '@/hooks/useLabels';
+import { issueService } from '@/services/api/issue.service';
+import { mapIssueToBackend, mapIssueToFrontend } from '@/utils/api-response';
 
 /***
  * =========================================================================================
@@ -109,11 +111,17 @@ type Label = {
 
 /***
  * =========================================================================================
- * MOCK DATA (REMOVED - NOW USING REAL API DATA)
+ * MOCK DATA
  * =========================================================================================
  */
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
+
+
+
+
+const INITIAL_SPRINTS: Sprint[] = [
+  { id: 's1', name: 'Sprint 1: Core Features', startDate: '2023-10-01', endDate: '2023-10-14', status: 'COMPLETED' },
+];
 
 const formatDate = (dateStr: string) => {
   if (!dateStr) return 'N/A';
@@ -178,8 +186,9 @@ interface AppContextType extends AppState {
   updateIssue: (issue: Issue) => void;
   deleteIssue: (issueId: string) => void; 
   updateIssueStatus: (issueId: string, status: IssueStatus) => void;
-  createProject: (project: Partial<Project>) => void;
-  deleteProject: (projectId: string) => void;
+  createProject: (project: Partial<Project>) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
+  checkProjectKeyAvailability: (key: string) => Promise<boolean>;
   createSprint: (sprint: Partial<Sprint>) => void;
   updateSprint: (sprint: Sprint) => void;
   deleteSprint: (sprintId: string) => void;
@@ -188,69 +197,85 @@ interface AppContextType extends AppState {
   startSprint: (sprintId: string, newStartDate?: string, newEndDate?: string) => void;
   navigateToIssue: (id: string) => void;
   goBackIssue: () => void;
+  isProjectsLoading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Don't use useAuth here - it will be handled by AppProviderContent
-  return <AppProviderContent>{children}</AppProviderContent>;
+  const { user: authUser, logout: authLogout } = useAuth();
+  
+  // Don't render the full app if there's no authenticated user
+  if (!authUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            Please log in to continue
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            You need to be authenticated to access the application.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <AppProviderContent authUser={authUser} authLogout={authLogout}>{children}</AppProviderContent>;
 };
 
-const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user: authUser, logout: authLogout } = useAuth();
+const AppProviderContent: React.FC<{ 
+  children: React.ReactNode;
+  authUser: any;
+  authLogout: () => void;
+}> = ({ children, authUser, authLogout }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light'); 
   const [currentView, setCurrentView] = useState<AppState['currentView']>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  // Initialize theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [isCreateIssueModalOpen, setCreateIssueModalOpen] = useState(false);
   const [createIssueInitialData, setCreateIssueInitialData] = useState<Partial<Issue> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [issueHistory, setIssueHistory] = useState<string[]>([]);
 
-  // Use real API hooks instead of mock data
-  const isAuthenticated = !!authUser;
-  
+  // Use real data from APIs - only when user is authenticated
   const { 
-    projects = [], 
+    projects, 
     createProject: createProjectAPI, 
     deleteProject: deleteProjectAPI,
-    isLoading: projectsLoading 
-  } = useAppProjects(isAuthenticated ? '' : undefined);
-  
+    checkProjectKeyAvailability: checkKeyAPI,
+    refetch: refetchProjects,
+    isLoading: isProjectsLoading 
+  } = useAppProjects(authUser ? searchQuery : undefined);
+
   const { 
     data: issues = [], 
-    isLoading: issuesLoading 
-  } = useIssues(isAuthenticated ? {} : undefined);
-  
+    isLoading: isIssuesLoading,
+    refetch: refetchIssues 
+  } = useIssues(authUser ? { search: searchQuery || undefined } : undefined);
+
+  const { 
+    data: sprints = [], 
+    isLoading: isSprintsLoading 
+  } = useSprints(authUser ? true : false);
+
+  const { 
+    data: labels = [], 
+    isLoading: isLabelsLoading 
+  } = useLabels(authUser ? true : false);
+
+  // Mutations for issues
   const createIssueMutation = useCreateIssue();
   const updateIssueMutation = useUpdateIssue();
   const updateIssueStatusMutation = useUpdateIssueStatus();
   const deleteIssueMutation = useDeleteIssue();
-  
-  const { 
-    data: sprints = [], 
-    isLoading: sprintsLoading 
-  } = useSprints(isAuthenticated);
-  
+
+  // Mutations for sprints
   const createSprintMutation = useCreateSprint();
   const updateSprintMutation = useUpdateSprint();
   const deleteSprintMutation = useDeleteSprint();
   const startSprintMutation = useStartSprint();
   const completeSprintMutation = useCompleteSprint();
-  
-  const { 
-    data: labels = [], 
-    isLoading: labelsLoading 
-  } = useLabels(isAuthenticated);
 
   // Convert auth user to app user format
   const user = authUser ? {
@@ -279,11 +304,7 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentView('auth');
   };
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
   const navigate = (view: AppState['currentView']) => setCurrentView(view);
   const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
 
@@ -310,109 +331,137 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+
+
   const addIssue = async (issueData: Partial<Issue>) => {
+    console.log('addIssue called with:', issueData);
+    
     try {
-      await createIssueMutation.mutateAsync(issueData as any);
-    } catch (error) {
+      await createIssueMutation.mutateAsync(issueData);
+      // The mutation will automatically update the cache and refetch data
+    } catch (error: any) {
       console.error('Failed to create issue:', error);
+      // Show error to user
+      alert(`Error creating issue: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
   const updateIssue = async (updatedIssue: Issue) => {
     try {
-      console.log('=== UPDATE ISSUE API CALL ===');
-      console.log('Issue ID:', updatedIssue.id);
-      console.log('Parent ID:', updatedIssue.parentId);
-      console.log('Story Points:', updatedIssue.storyPoints);
-      console.log('Full Issue Data:', updatedIssue);
-      
-      await updateIssueMutation.mutateAsync({ 
-        id: parseInt(updatedIssue.id), 
-        data: updatedIssue as any 
+      await updateIssueMutation.mutateAsync({
+        id: parseInt(updatedIssue.id),
+        data: updatedIssue
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update issue:', error);
-      console.error('Error details:', error);
+      alert(`Error updating issue: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
   const deleteIssue = async (issueId: string) => {
     try {
       await deleteIssueMutation.mutateAsync(parseInt(issueId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete issue:', error);
+      alert(`Error deleting issue: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
-  const updateIssueStatus = async (id: string, status: IssueStatus) => {
+  const updateIssueStatus = async (issueId: string, newStatus: IssueStatus) => {
     try {
-      await updateIssueStatusMutation.mutateAsync({ 
-        id: parseInt(id), 
-        status 
+      await updateIssueStatusMutation.mutateAsync({
+        id: parseInt(issueId),
+        status: newStatus
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update issue status:', error);
+      alert(`Error updating issue status: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
+  // Real project management functions
   const createProject = async (data: Partial<Project>) => {
     try {
-      await createProjectAPI(data as any);
+      await createProjectAPI(data);
     } catch (error) {
       console.error('Failed to create project:', error);
+      // You might want to show a toast notification here
     }
   };
 
   const deleteProject = async (projectId: string) => {
     try {
       await deleteProjectAPI(projectId);
+      // Issues will be automatically updated through React Query invalidation
     } catch (error) {
       console.error('Failed to delete project:', error);
+      // You might want to show a toast notification here
+    }
+  };
+
+  const checkProjectKeyAvailability = async (key: string) => {
+    try {
+      return await checkKeyAPI(key);
+    } catch (error) {
+      console.error('Failed to check project key availability:', error);
+      return false;
     }
   };
 
   const createSprint = async (data: Partial<Sprint>) => {
     try {
-      await createSprintMutation.mutateAsync(data as any);
-    } catch (error) {
+      await createSprintMutation.mutateAsync(data);
+    } catch (error: any) {
       console.error('Failed to create sprint:', error);
+      alert(`Error creating sprint: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
   const updateSprint = async (updatedSprint: Sprint) => {
     try {
-      await updateSprintMutation.mutateAsync({ 
-        id: parseInt(updatedSprint.id), 
-        data: updatedSprint as any 
+      await updateSprintMutation.mutateAsync({
+        id: parseInt(updatedSprint.id),
+        data: updatedSprint
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update sprint:', error);
+      alert(`Error updating sprint: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
   const deleteSprint = async (sprintId: string) => {
     try {
       await deleteSprintMutation.mutateAsync(parseInt(sprintId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete sprint:', error);
+      alert(`Error deleting sprint: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
-  const startSprint = async (sprintId: string, newStartDate?: string, newEndDate?: string) => {
+  const startSprint = async (sprintId: string) => {
     try {
-      // Use the dedicated start sprint mutation
       await startSprintMutation.mutateAsync(parseInt(sprintId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start sprint:', error);
+      alert(`Error starting sprint: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
   const completeSprint = async (sprintId: string) => {
     try {
-      // Use the dedicated complete sprint mutation
       await completeSprintMutation.mutateAsync(parseInt(sprintId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to complete sprint:', error);
+      alert(`Error completing sprint: ${error?.message || 'Unknown error'}`);
+      throw error;
     }
   };
 
@@ -420,23 +469,12 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) return;
 
     try {
-      const issue = issues.find(i => i.id === issueId);
-      if (issue) {
-        const newComment: Comment = {
-          id: generateId(),
-          issueId,
-          userId: user.id,
-          userName: user.name,
-          content,
-          createdAt: new Date().toISOString()
-        };
-
-        const currentComments = issue.comments || [];
-        await updateIssue({ 
-          ...issue, 
-          comments: [...currentComments, newComment]
-        });
-      }
+      // TODO: Implement comment creation through backend API
+      // For now, we'll just log this - comments will be implemented in task 16.2
+      console.log('Adding comment to issue:', issueId, 'content:', content);
+      
+      // This should be replaced with actual API call:
+      // await createCommentMutation.mutateAsync({ issueId: parseInt(issueId), content });
     } catch (error) {
       console.error('Failed to add comment:', error);
     }
@@ -451,8 +489,9 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
       setSelectedIssueId: handleSetSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData,
       navigateToIssue, goBackIssue,
       addIssue, updateIssue, deleteIssue, updateIssueStatus, 
-      createProject, deleteProject, createSprint, updateSprint, deleteSprint, 
-      addComment, completeSprint, startSprint
+      createProject, deleteProject, checkProjectKeyAvailability, createSprint, updateSprint, deleteSprint, 
+      addComment, completeSprint, startSprint,
+      isProjectsLoading
     }}>
       {children}
     </AppContext.Provider>
@@ -676,7 +715,7 @@ const Badge = ({ children, color = 'blue' }: { children: React.ReactNode, color?
  */
 
 // --- DELETE PROJECT CONFIRMATION MODAL ---
-const DeleteProjectConfirmationModal = ({ isOpen, onClose, onConfirm, project }: { isOpen: boolean, onClose: () => void, onConfirm: () => void, project: Project | null }) => {
+const DeleteProjectConfirmationModal = ({ isOpen, onClose, onConfirm, project, isDeleting = false }: { isOpen: boolean, onClose: () => void, onConfirm: () => void, project: Project | null, isDeleting?: boolean }) => {
   if (!isOpen || !project) return null;
 
   return (
@@ -700,13 +739,16 @@ const DeleteProjectConfirmationModal = ({ isOpen, onClose, onConfirm, project }:
         <div className="space-y-3">
           <button 
             onClick={onConfirm}
-            className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
+            disabled={isDeleting}
+            className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
           >
-            <Trash2 className="w-4 h-4" /> Yes, delete everything
+            <Trash2 className="w-4 h-4" /> 
+            {isDeleting ? 'Deleting...' : 'Yes, delete everything'}
           </button>
           <button 
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors font-medium text-sm"
+            disabled={isDeleting}
+            className="w-full py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
           >
             Cancel
           </button>
@@ -1161,7 +1203,7 @@ const CreateIssueModal = () => {
     type: 'TASK',
     priority: 'MEDIUM',
     status: 'BACKLOG',
-    projectId: projects[0]?.id || '',
+    projectId: '',
     parentId: '',
     description: ''
   });
@@ -1170,11 +1212,20 @@ const CreateIssueModal = () => {
     if (isCreateIssueModalOpen) {
       if (createIssueInitialData) {
         setNewIssue(prev => ({
-          ...prev,
+          title: '',
+          type: 'TASK',
+          priority: 'MEDIUM',
+          status: 'BACKLOG',
+          projectId: projects[0]?.id || '',
+          parentId: '',
+          description: '',
           ...createIssueInitialData
         }));
-      } else if (projects.length > 0 && !newIssue.projectId) {
-        setNewIssue(prev => ({ ...prev, projectId: projects[0].id }));
+      } else if (projects.length > 0) {
+        setNewIssue(prev => ({ 
+          ...prev, 
+          projectId: prev.projectId || projects[0].id 
+        }));
       }
     }
   }, [isCreateIssueModalOpen, createIssueInitialData, projects]);
@@ -1375,25 +1426,14 @@ const PrioritySelector = ({ value, onChange }: { value: IssuePriority, onChange:
 };
 // --- ISSUE DETAIL MODAL (EDITING) ---
 const IssueDetailModal = () => {
-  const { selectedIssueId, issues, sprints, setSelectedIssueId, updateIssue, updateIssueStatus, deleteIssue, issueHistory, goBackIssue, navigateToIssue } = useApp();
+  const { selectedIssueId, issues, sprints, setSelectedIssueId, updateIssue, deleteIssue, issueHistory, goBackIssue, navigateToIssue } = useApp();
   const [formData, setFormData] = useState<Issue | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (selectedIssueId) {
       const issue = issues.find(i => i.id === selectedIssueId);
-      if (issue) {
-        // Ensure all form fields have valid values (no null values)
-        setFormData({ 
-          ...issue,
-          title: issue.title || '',
-          description: issue.description || '',
-          parentId: issue.parentId || '',
-          sprintId: issue.sprintId || '',
-          storyPoints: issue.storyPoints || 0,
-          comments: issue.comments || []
-        });
-      }
+      if (issue) setFormData({ ...issue });
     } else {
       setFormData(null);
     }
@@ -1401,67 +1441,18 @@ const IssueDetailModal = () => {
 
   if (!selectedIssueId || !formData) return null;
 
-  const projectEpics = issues.filter(i => {
-    const isEpic = i.type === 'EPIC';
-    const sameProject = String(i.projectId) === String(formData.projectId);
-    const notSelf = i.id !== formData.id;
-    
-    // Also include issues that have children (act like epics)
-    const hasChildren = issues.some(child => child.parentId === i.id);
-    const isActuallyEpic = isEpic || hasChildren;
-    
-    return isActuallyEpic && sameProject && notSelf;
-  });
-  
+  const projectEpics = issues.filter(i => i.type === 'EPIC' && i.projectId === formData.projectId && i.id !== formData.id);
   const isParentRequired = formData.type !== 'EPIC';
   const parentEpic = formData.parentId ? issues.find(i => i.id === formData.parentId) : null;
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (formData) {
       if (isParentRequired && !formData.parentId) {
         alert("Este tipo de issue debe pertenecer a una Épica.");
         return;
       }
-      
-      // Additional validation: ensure parent epic belongs to same project
-      if (formData.parentId) {
-        const selectedEpic = issues.find(i => i.id === formData.parentId);
-        if (selectedEpic && String(selectedEpic.projectId) !== String(formData.projectId)) {
-          alert(`Error: El Epic seleccionado pertenece a un proyecto diferente.`);
-          return;
-        }
-      }
-      
-      // Get original issue to compare changes
-      const originalIssue = issues.find(i => i.id === formData.id);
-      
-      // Debug logging for Epic assignment
-      console.log('=== SAVING ISSUE ===');
-      console.log('Issue ID:', formData.id);
-      console.log('Issue Key:', formData.key);
-      console.log('Current Parent ID:', formData.parentId);
-      console.log('Story Points:', formData.storyPoints);
-      console.log('Original Status:', originalIssue?.status);
-      console.log('New Status:', formData.status);
-      console.log('Full Form Data:', formData);
-      
-      try {
-        // Check if status changed
-        const statusChanged = originalIssue && originalIssue.status !== formData.status;
-        
-        if (statusChanged) {
-          // Update status first
-          await updateIssueStatus(formData.id, formData.status);
-        }
-        
-        // Update other fields (excluding status since it's handled separately)
-        const { status, ...issueDataWithoutStatus } = formData;
-        await updateIssue(issueDataWithoutStatus as Issue);
-        
-        setSelectedIssueId(null);
-      } catch (error) {
-        console.error('Failed to save issue:', error);
-      }
+      updateIssue(formData);
+      setSelectedIssueId(null);
     }
   };
 
@@ -1477,22 +1468,11 @@ const IssueDetailModal = () => {
     }
   };
 
-  const handleMoveToBacklog = async () => {
+  const handleMoveToBacklog = () => {
     if (formData) {
-      try {
-        // Update status to BACKLOG and remove from sprint
-        await updateIssueStatus(formData.id, 'BACKLOG');
-        
-        // Update other fields (remove sprint assignment)
-        const updatedIssue = { ...formData, sprintId: undefined };
-        const { status, ...issueDataWithoutStatus } = updatedIssue;
-        await updateIssue(issueDataWithoutStatus as Issue);
-        
-        setShowDeleteModal(false);
-        setSelectedIssueId(null);
-      } catch (error) {
-        console.error('Failed to move issue to backlog:', error);
-      }
+      updateIssue({ ...formData, status: 'BACKLOG', sprintId: undefined });
+      setShowDeleteModal(false);
+      setSelectedIssueId(null);
     }
   };
 
@@ -1624,23 +1604,12 @@ const IssueDetailModal = () => {
                   <Tags className="w-4 h-4" />
                   <span>Points</span>
                 </div>
-                <select 
-                  className="bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded px-2 py-0.5 text-center text-gray-900 dark:text-white text-xs font-medium"
-                  value={formData.storyPoints || 0}
+                <input 
+                  type="number" 
+                  className="w-12 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded px-1 py-0.5 text-center text-gray-900 dark:text-white text-xs font-medium"
+                  value={formData.storyPoints}
                   onChange={(e) => setFormData({...formData, storyPoints: parseInt(e.target.value) || 0})}
-                >
-                  <option value={0}>0</option>
-                  <option value={1}>1</option>
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
-                  <option value={5}>5</option>
-                  <option value={8}>8</option>
-                  <option value={13}>13</option>
-                  <option value={21}>21</option>
-                  <option value={34}>34</option>
-                  <option value={55}>55</option>
-                  <option value={89}>89</option>
-                </select>
+                />
               </div>
             </div>
           </div>
@@ -1649,7 +1618,7 @@ const IssueDetailModal = () => {
           <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-transparent">
             <div className="max-w-3xl mx-auto space-y-6">
               <textarea 
-                value={formData.title || ''} 
+                value={formData.title} 
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
                 rows={1}
                 className="text-3xl font-bold bg-transparent outline-none text-gray-900 dark:text-white w-full placeholder-gray-400 resize-none overflow-hidden h-auto leading-tight p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors focus:bg-gray-100 dark:focus:bg-white/5"
@@ -1689,7 +1658,9 @@ const IssueDetailModal = () => {
 };
 // --- AUTH VIEW ---
 const AuthView = () => {
-  const { theme, toggleTheme } = useApp();
+  console.log('AuthView rendering...');
+  
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const { login, register, isLoading, error, clearError } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
@@ -1697,6 +1668,24 @@ const AuthView = () => {
     email: '',
     password: ''
   });
+
+  console.log('AuthView state:', { isLoading, error, isRegister });
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1725,6 +1714,8 @@ const AuthView = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  console.log('About to return AuthView JSX');
+  
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gray-50 dark:bg-[#020617]">
       {/* Theme Toggle Button - Absolute Positioned */}
@@ -1805,14 +1796,9 @@ const Dashboard = () => {
   const { issues, sprints, projects, navigate, setSelectedIssueId, searchQuery } = useApp();
   const activeSprint = sprints.find(s => s.status === 'ACTIVE');
 
-  // FILTRADO GLOBAL
-  const filteredIssues = issues.filter(i => 
-    i.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    i.key.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const myIssues = filteredIssues.filter(i => i.status !== 'DONE').slice(0, 5);
-  const activeSprintIssues = filteredIssues.filter(i => i.sprintId === activeSprint?.id);
+  // Issues are already filtered by the backend search
+  const myIssues = issues.filter(i => i.status !== 'DONE').slice(0, 5);
+  const activeSprintIssues = issues.filter(i => i.sprintId === activeSprint?.id);
 
   const priorityCounts = {
     CRITICAL: activeSprintIssues.filter(i => i.priority === 'CRITICAL').length,
@@ -1823,7 +1809,7 @@ const Dashboard = () => {
 
   const totalActiveIssues = activeSprintIssues.length || 1;
 
-  const recentIssues = [...filteredIssues].sort((a, b) => {
+  const recentIssues = [...issues].sort((a, b) => {
     const timeA = new Date(a.updatedAt || 0).getTime();
     const timeB = new Date(b.updatedAt || 0).getTime();
     return timeB - timeA;
@@ -1991,13 +1977,58 @@ const Dashboard = () => {
 };
 // --- PROJECTS VIEW (LIST & DETAIL) ---
 const ProjectsList = () => {
-  const { projects, issues, createProject, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, searchQuery, deleteProject } = useApp();
+  const { projects, issues, createProject, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, searchQuery, deleteProject, isProjectsLoading, checkProjectKeyAvailability } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [newProj, setNewProj] = useState({ name: '', key: '', description: '' });
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [expandedEpics, setExpandedEpics] = useState<string[]>([]);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [creationWizardStep, setCreationWizardStep] = useState<'NONE' | 'TYPE' | 'PARENT'>('NONE');
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Key validation state
+  const [keyValidation, setKeyValidation] = useState<{
+    isChecking: boolean;
+    isValid: boolean;
+    message: string;
+  }>({ isChecking: false, isValid: true, message: '' });
+
+  // Real-time key validation
+  useEffect(() => {
+    const validateKey = async () => {
+      if (!newProj.key || newProj.key.trim().length === 0) {
+        setKeyValidation({ isChecking: false, isValid: true, message: '' });
+        return;
+      }
+
+      if (newProj.key.trim().length < 2) {
+        setKeyValidation({ isChecking: false, isValid: false, message: 'Key must be at least 2 characters' });
+        return;
+      }
+
+      if (newProj.key.trim().length > 4) {
+        setKeyValidation({ isChecking: false, isValid: false, message: 'Key must be at most 4 characters' });
+        return;
+      }
+
+      setKeyValidation({ isChecking: true, isValid: true, message: 'Checking availability...' });
+
+      try {
+        const isAvailable = await checkProjectKeyAvailability(newProj.key.trim());
+        if (isAvailable) {
+          setKeyValidation({ isChecking: false, isValid: true, message: 'Key is available' });
+        } else {
+          setKeyValidation({ isChecking: false, isValid: false, message: 'Key already exists' });
+        }
+      } catch (error) {
+        setKeyValidation({ isChecking: false, isValid: false, message: 'Failed to check key availability' });
+      }
+    };
+
+    const timeoutId = setTimeout(validateKey, 500); // Debounce validation
+    return () => clearTimeout(timeoutId);
+  }, [newProj.key, checkProjectKeyAvailability]);
 
   // Logic to separate projects
   const isProjectCompleted = (projectId: string) => {
@@ -2039,10 +2070,37 @@ const ProjectsList = () => {
     setCreationWizardStep('NONE');
   };
 
-  const handleDeleteProjectConfirm = () => {
-    if(projectToDelete) {
-      deleteProject(projectToDelete.id);
+  const handleCreateProject = async () => {
+    if (!newProj.name.trim() || !newProj.key.trim() || !keyValidation.isValid) {
+      return; // Basic validation
+    }
+    
+    setIsCreating(true);
+    try {
+      await createProject(newProj);
+      setShowModal(false);
+      setNewProj({ name: '', key: '', description: '' });
+      setKeyValidation({ isChecking: false, isValid: true, message: '' });
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      // You might want to show a toast notification here
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDeleteProjectConfirm = async () => {
+    if (!projectToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteProject(projectToDelete.id);
       setProjectToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      // You might want to show a toast notification here
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -2058,12 +2116,8 @@ const ProjectsList = () => {
   if (selectedProjectId) {
     const project = projects.find(p => p.id === selectedProjectId);
 
-    // Filter issues by Search Query
-    const projectIssues = issues.filter(i => 
-      i.projectId === selectedProjectId && 
-      (i.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       i.key.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    // Issues are already filtered by the backend search
+    const projectIssues = issues.filter(i => i.projectId === selectedProjectId);
 
     const epics = projectIssues.filter(i => i.type === 'EPIC');
     const orphanIssues = projectIssues.filter(i => i.type !== 'EPIC' && !i.parentId);
@@ -2376,7 +2430,12 @@ const ProjectsList = () => {
         </h3>
         <GlassCard className="overflow-hidden">
           <div className="divide-y divide-gray-200 dark:divide-white/10">
-            {activeProjects.length > 0 ? (
+            {isProjectsLoading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-500 dark:text-gray-400">Loading projects...</p>
+              </div>
+            ) : activeProjects.length > 0 ? (
               activeProjects.map(project => <ProjectCard key={project.id} project={project} />)
             ) : (
               <div className="p-8 text-center text-gray-400">No active projects.</div>
@@ -2415,12 +2474,41 @@ const ProjectsList = () => {
                 value={newProj.name} 
                 onChange={(e:any) => setNewProj({...newProj, name: e.target.value})} 
               />
-              <GlassInput 
-                placeholder="KEY (e.g. WEB)" 
-                value={newProj.key} 
-                onChange={(e:any) => setNewProj({...newProj, key: e.target.value.toUpperCase()})} 
-                maxLength={4} 
-              />
+              <div className="space-y-2">
+                <GlassInput 
+                  placeholder="KEY (e.g. WEB)" 
+                  value={newProj.key} 
+                  onChange={(e:any) => setNewProj({...newProj, key: e.target.value.toUpperCase()})} 
+                  maxLength={4}
+                  className={`${
+                    newProj.key && !keyValidation.isValid && !keyValidation.isChecking 
+                      ? 'border-red-300 dark:border-red-600' 
+                      : newProj.key && keyValidation.isValid && !keyValidation.isChecking
+                      ? 'border-green-300 dark:border-green-600'
+                      : ''
+                  }`}
+                />
+                {newProj.key && keyValidation.message && (
+                  <div className={`flex items-center gap-2 text-xs ${
+                    keyValidation.isChecking 
+                      ? 'text-blue-500' 
+                      : keyValidation.isValid 
+                      ? 'text-green-500' 
+                      : 'text-red-500'
+                  }`}>
+                    {keyValidation.isChecking && (
+                      <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {!keyValidation.isChecking && keyValidation.isValid && (
+                      <Check className="w-3 h-3" />
+                    )}
+                    {!keyValidation.isChecking && !keyValidation.isValid && (
+                      <X className="w-3 h-3" />
+                    )}
+                    <span>{keyValidation.message}</span>
+                  </div>
+                )}
+              </div>
               <textarea 
                 className="w-full px-4 py-3 rounded-xl outline-none bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white"
                 placeholder="Description"
@@ -2429,8 +2517,21 @@ const ProjectsList = () => {
                 onChange={(e:any) => setNewProj({...newProj, description: e.target.value})}
               />
               <div className="flex justify-end gap-2 mt-4">
-                <GlassButton variant="ghost" onClick={() => setShowModal(false)}>Cancel</GlassButton>
-                <GlassButton onClick={() => { createProject(newProj); setShowModal(false); }}>Create</GlassButton>
+                <GlassButton variant="ghost" onClick={() => setShowModal(false)} disabled={isCreating}>
+                  Cancel
+                </GlassButton>
+                <GlassButton 
+                  onClick={handleCreateProject} 
+                  disabled={
+                    isCreating || 
+                    !newProj.name.trim() || 
+                    !newProj.key.trim() || 
+                    !keyValidation.isValid || 
+                    keyValidation.isChecking
+                  }
+                >
+                  {isCreating ? 'Creating...' : 'Create'}
+                </GlassButton>
               </div>
             </div>
           </GlassCard>
@@ -2444,6 +2545,7 @@ const ProjectsList = () => {
         onClose={() => setProjectToDelete(null)}
         onConfirm={handleDeleteProjectConfirm}
         project={projectToDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );
@@ -3216,41 +3318,62 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
  */
 
 const AppContent = () => {
-  const { currentView } = useApp();
-  const { user, isLoading } = useAuth();
+  console.log('AppContent rendering...');
+  
+  try {
+    const { currentView } = useApp();
+    const { user, isLoading } = useAuth();
 
-  // Show loading spinner while checking authentication
-  if (isLoading) {
+    console.log('Auth state:', { user: !!user, isLoading });
+
+    // Show loading spinner while checking authentication
+    if (isLoading) {
+      console.log('Showing loading spinner');
+      return (
+        <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-[#020617]">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-500 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30 animate-pulse">
+              <Zap className="text-white w-8 h-8" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Show auth view if not authenticated
+    if (!user) {
+      console.log('User not authenticated, showing AuthView');
+      return <AuthView />;
+    }
+
+    console.log('User authenticated, showing main app');
+    const renderView = () => {
+      switch (currentView) {
+        case 'dashboard': return <Dashboard />;
+        case 'projects': return <ProjectsList />;
+        case 'sprints': return <SprintsList />;
+        case 'kanban': return <SprintBoard />;
+        default: return <Dashboard />;
+      }
+    };
+
+    return (
+      <MainLayout>
+        {renderView()}
+      </MainLayout>
+    );
+  } catch (error) {
+    console.error('Error in AppContent:', error);
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-[#020617]">
         <div className="text-center">
-          <div className="w-16 h-16 bg-blue-500 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30 animate-pulse">
-            <Zap className="text-white w-8 h-8" />
-          </div>
-          <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+          <h1 className="text-xl font-bold text-red-600 mb-4">Error</h1>
+          <p className="text-gray-500">Something went wrong. Check the console for details.</p>
         </div>
       </div>
     );
   }
-
-  // Show auth view if not authenticated
-  if (!user) return <AuthView />;
-
-  const renderView = () => {
-    switch (currentView) {
-      case 'dashboard': return <Dashboard />;
-      case 'projects': return <ProjectsList />;
-      case 'sprints': return <SprintsList />;
-      case 'kanban': return <SprintBoard />;
-      default: return <Dashboard />;
-    }
-  };
-
-  return (
-    <MainLayout>
-      {renderView()}
-    </MainLayout>
-  );
 };
 
 export default function App() {
