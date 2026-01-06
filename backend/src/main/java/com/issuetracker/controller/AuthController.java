@@ -9,14 +9,14 @@ import com.issuetracker.entity.User;
 import com.issuetracker.service.AuthenticationService;
 import com.issuetracker.service.UserService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.logging.Logger;
 
 /**
  * REST controller for authentication operations.
@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class AuthController {
 
-    private static final Logger logger = Logger.getLogger(AuthController.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     private final AuthenticationService authenticationService;
     private final UserService userService;
 
@@ -49,10 +49,10 @@ public class AuthController {
             AuthResponse response = authenticationService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
-            logger.warning("Registration failed - user already exists: " + request.getEmail());
+            logger.warn("Registration failed - user already exists: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception e) {
-            logger.severe("Registration failed for email: " + request.getEmail() + " - " + e.getMessage());
+            logger.error("Registration failed for email: {} - {}", request.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -69,7 +69,7 @@ public class AuthController {
             AuthResponse response = authenticationService.login(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.warning("Login failed for email: " + request.getEmail());
+            logger.warn("Login failed for email: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
@@ -110,7 +110,7 @@ public class AuthController {
             
             return ResponseEntity.ok(userDto);
         } catch (Exception e) {
-            logger.warning("Failed to get current user: " + e.getMessage());
+            logger.warn("Failed to get current user: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

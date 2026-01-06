@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -13,7 +15,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.logging.Logger;
 
 /**
  * Service for JWT token generation, validation, and management.
@@ -22,7 +23,7 @@ import java.util.logging.Logger;
 @Service
 public class JwtService {
 
-    private static final Logger logger = Logger.getLogger(JwtService.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
     @Value("${jwt.secret}")
     private String secretKey;
@@ -163,7 +164,7 @@ public class JwtService {
             byte[] keyBytes = Decoders.BASE64.decode(secretKey);
             return Keys.hmacShaKeyFor(keyBytes);
         } catch (Exception e) {
-            logger.severe("Error decoding JWT secret key: " + e.getMessage());
+            logger.error("Error decoding JWT secret key: {}", e.getMessage());
             throw new RuntimeException("Failed to initialize JWT signing key", e);
         }
     }

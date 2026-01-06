@@ -46,7 +46,7 @@ public class SprintService {
      * @throws InvalidSprintOperationException if dates are invalid or overlap with existing sprints
      */
     public SprintDto createSprint(CreateSprintRequest request, User user) {
-        logger.debug("Creating sprint '{}' for user {}", request.getName(), user.getId());
+        logger.info("🏃 Creating sprint '{}' for user: {}", request.getName(), user.getEmail());
 
         // Validate dates
         validateSprintDates(request.getStartDate(), request.getEndDate());
@@ -55,6 +55,7 @@ public class SprintService {
         List<Sprint> overlappingSprints = sprintRepository.findOverlappingSprints(
                 user, request.getStartDate(), request.getEndDate(), null);
         if (!overlappingSprints.isEmpty()) {
+            logger.warn("❌ Sprint creation failed - overlapping dates for user: {}", user.getEmail());
             throw InvalidSprintOperationException.overlappingSprints();
         }
 
@@ -62,8 +63,8 @@ public class SprintService {
         Sprint sprint = new Sprint(user, request.getName(), request.getStartDate(), request.getEndDate());
         Sprint savedSprint = sprintRepository.save(sprint);
 
-        logger.info("Created sprint '{}' (ID: {}) for user {}", 
-                   savedSprint.getName(), savedSprint.getId(), user.getId());
+        logger.info("✅ Created sprint '{}' (ID: {}) for user: {}", 
+                   savedSprint.getName(), savedSprint.getId(), user.getEmail());
 
         return convertToDto(savedSprint);
     }
@@ -116,7 +117,7 @@ public class SprintService {
      * @throws InvalidSprintOperationException if another sprint is already active
      */
     public SprintDto activateSprint(Long sprintId, User user) {
-        logger.debug("Activating sprint {} for user {}", sprintId, user.getId());
+        logger.info("🚀 Activating sprint {} for user: {}", sprintId, user.getEmail());
 
         Sprint sprint = sprintRepository.findByIdAndUser(sprintId, user)
                 .orElseThrow(() -> ResourceNotFoundException.sprint(sprintId));
@@ -124,14 +125,15 @@ public class SprintService {
         // Check if another sprint is already active
         Optional<Sprint> activeSprint = sprintRepository.findByUserAndStatus(user, SprintStatus.ACTIVE);
         if (activeSprint.isPresent() && !activeSprint.get().getId().equals(sprintId)) {
+            logger.warn("❌ Sprint activation failed - another sprint already active for user: {}", user.getEmail());
             throw InvalidSprintOperationException.activeSprintExists();
         }
 
         sprint.setStatus(SprintStatus.ACTIVE);
         Sprint activatedSprint = sprintRepository.save(sprint);
 
-        logger.info("Activated sprint '{}' (ID: {}) for user {}", 
-                   activatedSprint.getName(), activatedSprint.getId(), user.getId());
+        logger.info("✅ Activated sprint '{}' (ID: {}) for user: {}", 
+                   activatedSprint.getName(), activatedSprint.getId(), user.getEmail());
 
         return convertToDto(activatedSprint);
     }
@@ -145,30 +147,32 @@ public class SprintService {
      * @throws InvalidSprintOperationException if sprint is not active
      */
     public SprintDto completeSprint(Long sprintId, User user) {
-        logger.debug("Completing sprint {} for user {}", sprintId, user.getId());
+        logger.info("🏁 Completing sprint {} for user: {}", sprintId, user.getEmail());
 
         Sprint sprint = sprintRepository.findByIdAndUser(sprintId, user)
                 .orElseThrow(() -> ResourceNotFoundException.sprint(sprintId));
 
         if (sprint.getStatus() != SprintStatus.ACTIVE) {
+            logger.warn("❌ Sprint completion failed - sprint not active for user: {}", user.getEmail());
             throw InvalidSprintOperationException.sprintNotActive();
         }
 
         // Move incomplete issues back to backlog
         List<Issue> sprintIssues = issueRepository.findByUserAndSprint(user, sprint);
+        int movedIssues = 0;
         for (Issue issue : sprintIssues) {
             if (issue.getStatus() != IssueStatus.DONE) {
                 issue.setSprint(null); // Remove from sprint (back to backlog)
                 issueRepository.save(issue);
+                movedIssues++;
             }
         }
 
         sprint.setStatus(SprintStatus.COMPLETED);
         Sprint completedSprint = sprintRepository.save(sprint);
 
-        logger.info("Completed sprint '{}' (ID: {}) for user {} - moved {} incomplete issues to backlog", 
-                   completedSprint.getName(), completedSprint.getId(), user.getId(),
-                   sprintIssues.stream().mapToLong(i -> i.getStatus() != IssueStatus.DONE ? 1 : 0).sum());
+        logger.info("✅ Completed sprint '{}' (ID: {}) for user: {} - moved {} incomplete issues to backlog", 
+                   completedSprint.getName(), completedSprint.getId(), user.getEmail(), movedIssues);
 
         return convertToDto(completedSprint);
     }

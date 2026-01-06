@@ -102,8 +102,8 @@ public class IssueService {
         // Create audit log
         auditService.logIssueCreated(savedIssue, user);
 
-        logger.info("Created issue '{}' (ID: {}) for user {}", 
-                   savedIssue.getTitle(), savedIssue.getId(), user.getId());
+        logger.info("📝 Created issue '{}' (ID: {}) for user: {}", 
+                   savedIssue.getTitle(), savedIssue.getId(), user.getEmail());
 
         return convertToDto(savedIssue);
     }
@@ -118,7 +118,7 @@ public class IssueService {
      * @throws ResourceNotFoundException if issue not found or not owned by user
      */
     public IssueDto updateIssue(Long issueId, UpdateIssueRequest request, User user) {
-        logger.debug("Updating issue {} for user {}", issueId, user.getId());
+        logger.info("📝 Updating issue {} for user: {}", issueId, user.getEmail());
 
         Issue issue = issueRepository.findByIdAndUser(issueId, user)
                 .orElseThrow(() -> ResourceNotFoundException.issue(issueId));
@@ -210,8 +210,8 @@ public class IssueService {
      * @throws InvalidWorkflowTransitionException if transition is invalid
      */
     public IssueDto updateIssueStatus(Long issueId, StatusUpdateRequest request, User user) {
-        logger.debug("Updating status of issue {} to {} for user {}", 
-                    issueId, request.getNewStatus(), user.getId());
+        logger.info("🔄 Updating status of issue {} to {} for user: {}", 
+                    issueId, request.getNewStatus(), user.getEmail());
 
         Issue issue = issueRepository.findByIdAndUser(issueId, user)
                 .orElseThrow(() -> ResourceNotFoundException.issue(issueId));
@@ -221,6 +221,8 @@ public class IssueService {
 
         // Validate workflow transition
         if (!isValidTransition(oldStatus, newStatus)) {
+            logger.warn("❌ Invalid transition from {} to {} for issue {} by user: {}", 
+                       oldStatus, newStatus, issueId, user.getEmail());
             throw InvalidWorkflowTransitionException.transition(oldStatus, newStatus);
         }
 
@@ -230,8 +232,8 @@ public class IssueService {
         // Create audit log for status change
         auditService.logStatusChange(updatedIssue, user, oldStatus, newStatus);
 
-        logger.info("Updated status of issue '{}' (ID: {}) from {} to {} for user {}", 
-                   updatedIssue.getTitle(), updatedIssue.getId(), oldStatus, newStatus, user.getId());
+        logger.info("✅ Status updated for '{}' (ID: {}) from {} to {} by user: {}", 
+                   updatedIssue.getTitle(), updatedIssue.getId(), oldStatus, newStatus, user.getEmail());
 
         return convertToDto(updatedIssue);
     }

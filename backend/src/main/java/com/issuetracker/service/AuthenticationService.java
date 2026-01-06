@@ -5,6 +5,8 @@ import com.issuetracker.dto.LoginRequest;
 import com.issuetracker.dto.RegisterRequest;
 import com.issuetracker.dto.UserDto;
 import com.issuetracker.entity.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,8 +14,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.logging.Logger;
 
 /**
  * Service for authentication operations.
@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 @Transactional
 public class AuthenticationService {
 
-    private static final Logger logger = Logger.getLogger(AuthenticationService.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
     private final UserService userService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -52,19 +52,27 @@ public class AuthenticationService {
      * @return authentication response with tokens
      */
     public AuthResponse register(RegisterRequest request) {
-        // Register user
-        User user = userService.registerUser(request.getEmail(), request.getPassword(), request.getName());
+        logger.info("🔐 Registration attempt for: {}", request.getEmail());
         
-        // Load user details for token generation
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        
-        // Generate tokens
-        String accessToken = jwtService.generateToken(userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
-        
-        // Create response
-        UserDto userDto = UserDto.fromEntity(user);
-        return new AuthResponse(accessToken, refreshToken, jwtExpiration / 1000, userDto);
+        try {
+            // Register user
+            User user = userService.registerUser(request.getEmail(), request.getPassword(), request.getName());
+            
+            // Load user details for token generation
+            UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+            
+            // Generate tokens
+            String accessToken = jwtService.generateToken(userDetails);
+            String refreshToken = jwtService.generateRefreshToken(userDetails);
+            
+            // Create response
+            UserDto userDto = UserDto.fromEntity(user);
+            logger.info("✅ Registration successful for: {}", request.getEmail());
+            return new AuthResponse(accessToken, refreshToken, jwtExpiration / 1000, userDto);
+        } catch (Exception e) {
+            logger.error("❌ Registration failed for: {} - {}", request.getEmail(), e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -74,7 +82,7 @@ public class AuthenticationService {
      * @return authentication response with tokens
      */
     public AuthResponse login(LoginRequest request) {
-        logger.fine("Login attempt for email: " + request.getEmail());
+        logger.info("🔑 Login attempt for: {}", request.getEmail());
         
         try {
             // Authenticate user
@@ -95,10 +103,10 @@ public class AuthenticationService {
             UserDto userDto = UserDto.fromEntity(user);
             AuthResponse response = new AuthResponse(accessToken, refreshToken, jwtExpiration / 1000, userDto);
             
-            logger.info("Login successful for user: " + request.getEmail());
+            logger.info("✅ Login successful for: {}", request.getEmail());
             return response;
         } catch (Exception e) {
-            logger.warning("Authentication failed for email: " + request.getEmail() + " - " + e.getMessage());
+            logger.warn("❌ Authentication failed for: {} - {}", request.getEmail(), e.getMessage());
             throw e;
         }
     }

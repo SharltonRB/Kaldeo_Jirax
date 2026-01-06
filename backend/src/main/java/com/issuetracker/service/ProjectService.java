@@ -46,10 +46,11 @@ public class ProjectService {
      * @throws DuplicateResourceException if project key already exists for the user
      */
     public ProjectDto createProject(CreateProjectRequest request, User user) {
-        logger.debug("Creating project with key '{}' for user {}", request.getKey(), user.getId());
+        logger.info("📁 Creating project '{}' for user: {}", request.getKey(), user.getEmail());
 
         // Validate project key uniqueness within user scope
         if (projectRepository.existsByKeyAndUser(request.getKey(), user)) {
+            logger.warn("❌ Project key '{}' already exists for user: {}", request.getKey(), user.getEmail());
             throw DuplicateResourceException.projectKey(request.getKey());
         }
 
@@ -57,8 +58,8 @@ public class ProjectService {
         Project project = new Project(user, request.getName(), request.getKey(), request.getDescription());
         Project savedProject = projectRepository.save(project);
 
-        logger.info("Created project '{}' with key '{}' for user {}", 
-                   savedProject.getName(), savedProject.getKey(), user.getId());
+        logger.info("✅ Created project '{}' with key '{}' for user: {}", 
+                   savedProject.getName(), savedProject.getKey(), user.getEmail());
 
         return convertToDto(savedProject);
     }
@@ -73,7 +74,7 @@ public class ProjectService {
      * @throws ResourceNotFoundException if project not found or not owned by user
      */
     public ProjectDto updateProject(Long projectId, UpdateProjectRequest request, User user) {
-        logger.debug("Updating project {} for user {}", projectId, user.getId());
+        logger.info("📁 Updating project {} for user: {}", projectId, user.getEmail());
 
         Project project = projectRepository.findByIdAndUser(projectId, user)
                 .orElseThrow(() -> ResourceNotFoundException.project(projectId));

@@ -2,6 +2,8 @@ package com.issuetracker.service;
 
 import com.issuetracker.entity.User;
 import com.issuetracker.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -9,7 +11,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.logging.Logger;
 
 /**
  * Implementation of Spring Security UserDetailsService.
@@ -18,7 +19,7 @@ import java.util.logging.Logger;
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private static final Logger logger = Logger.getLogger(UserDetailsServiceImpl.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(UserDetailsServiceImpl.class);
     private final UserRepository userRepository;
 
     @Autowired
@@ -35,15 +36,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        logger.fine("Loading user by username: " + username);
+        logger.debug("Loading user by username: {}", username);
         
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> {
-                    logger.warning("User not found with email: " + username);
+                    logger.warn("User not found with email: {}", username);
                     return new UsernameNotFoundException("User not found with email: " + username);
                 });
 
-        logger.fine("User found: " + user.getName());
+        logger.debug("User found: {}", user.getName());
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
@@ -55,7 +56,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .disabled(false)
                 .build();
                 
-        logger.fine("UserDetails created successfully");
+        logger.debug("UserDetails created successfully");
         return userDetails;
     }
 }
