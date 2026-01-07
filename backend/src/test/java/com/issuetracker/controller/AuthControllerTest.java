@@ -5,6 +5,7 @@ import com.issuetracker.dto.LoginRequest;
 import com.issuetracker.dto.RefreshRequest;
 import com.issuetracker.dto.RegisterRequest;
 import com.issuetracker.service.AuthenticationService;
+import com.issuetracker.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
@@ -52,6 +53,9 @@ class AuthControllerTest {
 
     @MockBean
     private AuthenticationService authenticationService;
+
+    @MockBean
+    private UserService userService;
 
     @Autowired
     private ObjectMapper objectMapper;

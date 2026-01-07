@@ -155,9 +155,12 @@
                     <reuseForks>true</reuseForks>
                     <parallel>methods</parallel>
                     <threadCount>4</threadCount>
-                    <!-- Configuración específica para property tests -->
+                    <!-- Usar perfil de test con logs mínimos -->
                     <systemPropertyVariables>
+                        <spring.profiles.active>test</spring.profiles.active>
                         <quicktheories.examples>25</quicktheories.examples>
+                        <logging.level.root>WARN</logging.level.root>
+                        <logging.level.com.issuetracker>ERROR</logging.level.com.issuetracker>
                         <quicktheories.shrinks>100</quicktheories.shrinks>
                     </systemPropertyVariables>
                 </configuration>
@@ -166,6 +169,36 @@
     </build>
 
     <profiles>
+        <!-- Perfil para builds limpios y rápidos -->
+        <profile>
+            <id>clean-build</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Dnet.bytebuddy.experimental=true -XX:+EnableDynamicAgentLoading</argLine>
+                            <systemPropertyVariables>
+                                <spring.profiles.active>test</spring.profiles.active>
+                                <logging.level.root>ERROR</logging.level.root>
+                                <logging.level.com.issuetracker>ERROR</logging.level.com.issuetracker>
+                                <quicktheories.examples>10</quicktheories.examples>
+                                <quicktheories.shrinks>25</quicktheories.shrinks>
+                            </systemPropertyVariables>
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <parallel>methods</parallel>
+                            <threadCount>2</threadCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- Perfil para desarrollo rápido -->
         <profile>
             <id>fast-tests</id>

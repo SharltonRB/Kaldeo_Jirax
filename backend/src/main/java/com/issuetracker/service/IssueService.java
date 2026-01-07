@@ -83,6 +83,12 @@ public class IssueService {
             Sprint sprint = sprintRepository.findByIdAndUser(request.getSprintId(), user)
                     .orElseThrow(() -> ResourceNotFoundException.sprint(request.getSprintId()));
             issue.setSprint(sprint);
+            
+            // If sprint is active, set issue status to SELECTED_FOR_DEVELOPMENT
+            if (sprint.getStatus() == SprintStatus.ACTIVE) {
+                issue.setStatus(IssueStatus.SELECTED_FOR_DEVELOPMENT);
+                logger.debug("Setting issue status to SELECTED_FOR_DEVELOPMENT for active sprint");
+            }
         }
 
         // Set labels if provided
@@ -346,21 +352,14 @@ public class IssueService {
         }
 
         return switch (from) {
-            case BACKLOG -> to == IssueStatus.SELECTED_FOR_DEVELOPMENT || 
-                           to == IssueStatus.IN_PROGRESS || 
-                           to == IssueStatus.DONE; // Allow direct completion from backlog
+            case BACKLOG -> to == IssueStatus.SELECTED_FOR_DEVELOPMENT;
             case SELECTED_FOR_DEVELOPMENT -> to == IssueStatus.IN_PROGRESS || 
-                                           to == IssueStatus.BACKLOG || 
-                                           to == IssueStatus.DONE; // Allow direct completion
+                                           to == IssueStatus.BACKLOG;
             case IN_PROGRESS -> to == IssueStatus.IN_REVIEW || 
-                              to == IssueStatus.SELECTED_FOR_DEVELOPMENT || 
-                              to == IssueStatus.BACKLOG || 
-                              to == IssueStatus.DONE; // Allow direct completion
+                              to == IssueStatus.SELECTED_FOR_DEVELOPMENT;
             case IN_REVIEW -> to == IssueStatus.DONE || 
-                            to == IssueStatus.IN_PROGRESS || 
-                            to == IssueStatus.BACKLOG; // Allow moving back to backlog
-            case DONE -> to == IssueStatus.IN_REVIEW || 
-                       to == IssueStatus.BACKLOG; // Allow reopening to review or backlog
+                            to == IssueStatus.IN_PROGRESS;
+            case DONE -> to == IssueStatus.IN_REVIEW;
         };
     }
 
@@ -419,10 +418,10 @@ public class IssueService {
         if (issue.getParentIssue() != null) {
             dto.setParentIssueId(issue.getParentIssue().getId());
             dto.setParentIssueTitle(issue.getParentIssue().getTitle());
-            dto.setEpic(false);
-        } else {
-            dto.setEpic(true);
         }
+        
+        // Set epic status based on issue type, not parent relationship
+        dto.setEpic(issue.isEpic());
 
         // Set child issue count for epics
         if (issue.isEpic()) {

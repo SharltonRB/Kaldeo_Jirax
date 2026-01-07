@@ -213,6 +213,12 @@ export const useCompleteSprint = () => {
       
       // Invalidate sprints list to ensure consistency
       queryClient.invalidateQueries({ queryKey: sprintKeys.lists() });
+      
+      // Invalidate issues list to refresh the updated issues (moved to backlog)
+      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+      
+      console.log(`✅ Sprint completed successfully. Issues moved to backlog automatically.`);
     },
     onError: (error) => {
       console.error('Failed to complete sprint:', error);

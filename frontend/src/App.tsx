@@ -414,38 +414,13 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const completeSprint = async (sprintId: string) => {
     try {
-      // First, move all non-DONE issues back to backlog
-      const sprintIssues = issues.filter(issue => 
-        issue.sprintId === sprintId && issue.status !== 'DONE'
-      );
-      
-      console.log(`Found ${sprintIssues.length} incomplete issues to move to backlog`);
-      
-      // Update each non-completed issue to move back to backlog
-      for (const issue of sprintIssues) {
-        try {
-          console.log(`Moving issue ${issue.key} from ${issue.status} to BACKLOG`);
-          
-          // First update the status to BACKLOG
-          await updateIssueStatus(issue.id, IssueStatus.BACKLOG);
-          
-          // Then update the full issue to remove sprint assignment
-          const updatedIssue: Issue = {
-            ...issue,
-            status: IssueStatus.BACKLOG,
-            sprintId: undefined // Remove from sprint
-          };
-          await updateIssue(updatedIssue);
-          
-        } catch (error) {
-          console.error(`Failed to move issue ${issue.key} to backlog:`, error);
-        }
-      }
-      
-      // Then complete the sprint
+      // The backend handles moving incomplete issues to backlog automatically
       await completeSprintMutation.mutateAsync(parseInt(sprintId));
       
-      console.log(`Sprint ${sprintId} completed successfully. ${sprintIssues.length} issues moved to backlog.`);
+      // Refresh issues to reflect the changes
+      await refetchIssues();
+      
+      console.log(`Sprint ${sprintId} completed successfully.`);
       
     } catch (error) {
       console.error('Failed to complete sprint:', error);
@@ -2572,12 +2547,38 @@ const ProjectsList = () => {
                 value={newProj.name} 
                 onChange={(e:any) => setNewProj({...newProj, name: e.target.value})} 
               />
-              <GlassInput 
-                placeholder="KEY (e.g. WEB)" 
-                value={newProj.key} 
-                onChange={(e:any) => setNewProj({...newProj, key: e.target.value.toUpperCase()})} 
-                maxLength={4} 
-              />
+              <div>
+                <GlassInput 
+                  placeholder="Project Key (e.g. WEB, SHOP, BLOG)" 
+                  value={newProj.key} 
+                  onChange={(e:any) => {
+                    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+                    setNewProj({...newProj, key: value});
+                  }} 
+                  maxLength={10}
+                  className={`${
+                    newProj.key && (newProj.key.length < 2 || !/^[A-Z][A-Z0-9_-]*$/.test(newProj.key))
+                      ? 'border-red-300 focus:border-red-500' 
+                      : newProj.key.length >= 2 && /^[A-Z][A-Z0-9_-]*$/.test(newProj.key)
+                      ? 'border-green-300 focus:border-green-500'
+                      : ''
+                  }`}
+                />
+                <p className={`text-xs mt-1 px-1 ${
+                  newProj.key && (newProj.key.length < 2 || !/^[A-Z][A-Z0-9_-]*$/.test(newProj.key))
+                    ? 'text-red-500' 
+                    : newProj.key.length >= 2 && /^[A-Z][A-Z0-9_-]*$/.test(newProj.key)
+                    ? 'text-green-500'
+                    : 'text-gray-500'
+                }`}>
+                  {newProj.key && (newProj.key.length < 2 || !/^[A-Z][A-Z0-9_-]*$/.test(newProj.key))
+                    ? 'Invalid: Must be 2+ chars, start with letter, only A-Z 0-9 _ -'
+                    : newProj.key.length >= 2 && /^[A-Z][A-Z0-9_-]*$/.test(newProj.key)
+                    ? 'Valid project key ✓'
+                    : '2-10 characters, must start with a letter, only A-Z, 0-9, _, -'
+                  }
+                </p>
+              </div>
               <textarea 
                 className="w-full px-4 py-3 rounded-xl outline-none bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white"
                 placeholder="Description"
@@ -2586,8 +2587,38 @@ const ProjectsList = () => {
                 onChange={(e:any) => setNewProj({...newProj, description: e.target.value})}
               />
               <div className="flex justify-end gap-2 mt-4">
-                <GlassButton variant="ghost" onClick={() => setShowModal(false)}>Cancel</GlassButton>
-                <GlassButton onClick={() => { createProject(newProj); setShowModal(false); }}>Create</GlassButton>
+                <GlassButton variant="ghost" onClick={() => { 
+                  setShowModal(false); 
+                  setNewProj({ name: '', key: '', description: '' }); // Reset form
+                }}>Cancel</GlassButton>
+                <GlassButton 
+                  onClick={() => { 
+                    // Validate before creating
+                    if (!newProj.name.trim()) {
+                      alert('Project name is required');
+                      return;
+                    }
+                    if (!newProj.key.trim()) {
+                      alert('Project key is required');
+                      return;
+                    }
+                    if (newProj.key.length < 2) {
+                      alert('Project key must be at least 2 characters long');
+                      return;
+                    }
+                    if (!/^[A-Z][A-Z0-9_-]*$/.test(newProj.key)) {
+                      alert('Project key must start with a letter and contain only uppercase letters, numbers, underscores, and hyphens');
+                      return;
+                    }
+                    
+                    createProject(newProj); 
+                    setShowModal(false); 
+                    setNewProj({ name: '', key: '', description: '' }); // Reset form
+                  }}
+                  disabled={!newProj.name.trim() || !newProj.key.trim() || newProj.key.length < 2 || !/^[A-Z][A-Z0-9_-]*$/.test(newProj.key)}
+                >
+                  Create
+                </GlassButton>
               </div>
             </div>
           </GlassCard>
