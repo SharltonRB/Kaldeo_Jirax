@@ -9,12 +9,29 @@ personal-issue-tracker/
 ├── backend/                      # Spring Boot API
 ├── frontend/                     # React TypeScript SPA
 ├── infrastructure/               # Docker, K8s, Terraform
-├── docs/                        # Documentation
+├── docs/                        # 📚 All Documentation (organized)
+│   ├── architecture/            # System architecture docs
+│   ├── development/             # Development guides
+│   ├── fixes/                   # Bug fixes documentation
+│   ├── improvements/            # Feature improvements
+│   ├── security/                # Security documentation
+│   ├── testing/                 # Testing guides and scripts
+│   └── INDEX.md                 # Documentation index
 ├── scripts/                     # Automation scripts
 ├── logs/                        # Application logs
 ├── docker-compose.yml           # Development services
 └── README.md                    # This file
 ```
+
+## 📚 Documentation
+
+All project documentation is organized in the [`docs/`](docs/) directory:
+
+- **[Documentation Index](docs/INDEX.md)** - Complete documentation overview
+- **[Development Guide](docs/DEVELOPMENT.md)** - Setup and development instructions
+- **[Architecture](docs/architecture/)** - System design and architecture
+- **[Security](docs/SECURITY.md)** - Security guidelines and practices
+- **[Testing](docs/testing/)** - Testing strategies and scripts
 
 ## 🚀 Quick Start
 
