@@ -5,10 +5,14 @@ import com.issuetracker.dto.SprintDto;
 import com.issuetracker.dto.SprintActivationResponse;
 import com.issuetracker.dto.SprintActivationRequest;
 import com.issuetracker.dto.UpdateSprintRequest;
+import com.issuetracker.dto.AddIssuesToSprintRequest;
+import com.issuetracker.dto.IssueDto;
 import com.issuetracker.entity.SprintStatus;
 import com.issuetracker.entity.User;
+import com.issuetracker.entity.Issue;
 import com.issuetracker.service.SprintService;
 import com.issuetracker.service.UserService;
+import com.issuetracker.service.IssueService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,9 +23,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for sprint management operations.
@@ -32,13 +39,17 @@ import java.util.Optional;
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class SprintController {
 
+    private static final Logger logger = LoggerFactory.getLogger(SprintController.class);
+
     private final SprintService sprintService;
     private final UserService userService;
+    private final IssueService issueService;
 
     @Autowired
-    public SprintController(SprintService sprintService, UserService userService) {
+    public SprintController(SprintService sprintService, UserService userService, IssueService issueService) {
         this.sprintService = sprintService;
         this.userService = userService;
+        this.issueService = issueService;
     }
 
     /**
@@ -249,6 +260,67 @@ public class SprintController {
         User currentUser = getCurrentUser();
         List<SprintDto> sprints = sprintService.getSprintsByStatus(currentUser, SprintStatus.COMPLETED);
         return ResponseEntity.ok(sprints);
+    }
+
+    /**
+     * Adds issues to a sprint.
+     * If the sprint is ACTIVE, issues are moved to SELECTED_FOR_DEVELOPMENT status.
+     * If the sprint is PLANNED, issues remain in BACKLOG status.
+     *
+     * @param id sprint ID
+     * @param request request containing issue IDs to add
+     * @return list of updated issue DTOs
+     */
+    @PostMapping("/{id}/issues")
+    public ResponseEntity<List<IssueDto>> addIssuesToSprint(
+            @PathVariable Long id,
+            @Valid @RequestBody AddIssuesToSprintRequest request) {
+        
+        User currentUser = getCurrentUser();
+        logger.info("📋 Adding {} issues to sprint {} for user: {}", 
+                   request.getIssueIds().size(), id, currentUser.getEmail());
+        
+        List<Issue> updatedIssues = sprintService.addIssuesToSprint(id, request.getIssueIds(), currentUser);
+        
+        // Convert to DTOs using IssueService
+        List<IssueDto> issueDtos = updatedIssues.stream()
+                .map(issue -> issueService.convertIssueToDto(issue))
+                .collect(Collectors.toList());
+        
+        logger.info("✅ Successfully added {} issues to sprint {}", issueDtos.size(), id);
+        return ResponseEntity.ok(issueDtos);
+    }
+
+    /**
+     * Gets all issues that were part of a completed sprint.
+     * This includes both completed issues (still in sprint) and incomplete issues 
+     * (moved to backlog but marked with lastCompletedSprint).
+     *
+     * @param id completed sprint ID
+     * @return list of issue DTOs that were part of the sprint
+     */
+    @GetMapping("/{id}/issues")
+    public ResponseEntity<List<IssueDto>> getCompletedSprintIssues(@PathVariable Long id) {
+        logger.info("🔍 Getting issues for sprint {} - endpoint called", id);
+        
+        User currentUser = getCurrentUser();
+        logger.info("🔍 Current user: {}", currentUser.getEmail());
+        
+        List<Issue> issues = sprintService.getCompletedSprintIssues(id, currentUser);
+        logger.info("🔍 Found {} issues for sprint {}", issues.size(), id);
+        
+        // Convert to DTOs using IssueService
+        List<IssueDto> issueDtos = issues.stream()
+                .map(issue -> {
+                    IssueDto dto = issueService.convertIssueToDto(issue);
+                    logger.info("🔍 Issue DTO: id={}, title={}, status={}, sprintId={}, lastCompletedSprintId={}", 
+                               dto.getId(), dto.getTitle(), dto.getStatus(), dto.getSprintId(), dto.getLastCompletedSprintId());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        
+        logger.info("🔍 Returning {} issue DTOs", issueDtos.size());
+        return ResponseEntity.ok(issueDtos);
     }
 
     /**

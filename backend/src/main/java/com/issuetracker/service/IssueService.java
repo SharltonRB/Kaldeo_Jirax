@@ -393,6 +393,12 @@ public class IssueService {
             dto.setSprintName(issue.getSprint().getName());
         }
 
+        // Set last completed sprint information
+        if (issue.getLastCompletedSprint() != null) {
+            dto.setLastCompletedSprintId(issue.getLastCompletedSprint().getId());
+            dto.setLastCompletedSprintName(issue.getLastCompletedSprint().getName());
+        }
+
         // Set issue type information
         dto.setIssueTypeId(issue.getIssueType().getId());
         dto.setIssueTypeName(issue.getIssueType().getName());
@@ -427,6 +433,16 @@ public class IssueService {
         }
 
         return dto;
+    }
+
+    /**
+     * Converts an Issue entity to IssueDto for external use.
+     *
+     * @param issue the issue entity
+     * @return the issue DTO
+     */
+    public IssueDto convertIssueToDto(Issue issue) {
+        return convertToDto(issue);
     }
 
     // Epic hierarchy methods

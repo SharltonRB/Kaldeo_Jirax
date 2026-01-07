@@ -54,6 +54,22 @@ export const useSprint = (id: number) => {
 };
 
 /**
+ * Hook for fetching issues from a completed sprint
+ */
+export const useCompletedSprintIssues = (sprintId: number, enabled: boolean = true) => {
+  return useQuery({
+    queryKey: [...sprintKeys.detail(sprintId), 'issues'],
+    queryFn: async () => {
+      const issues = await sprintService.getSprintIssues(sprintId);
+      return issues;
+    },
+    enabled: enabled && !!sprintId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+};
+
+/**
  * Hook for creating a new sprint
  */
 export const useCreateSprint = () => {

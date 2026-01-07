@@ -35,11 +35,12 @@ export interface FrontendIssue {
   key: string;
   title: string;
   description?: string;
-  status: 'BACKLOG' | 'SELECTED' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
+  status: BackendTypes.IssueStatus;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   type: 'STORY' | 'TASK' | 'BUG' | 'EPIC';
   storyPoints?: number;
   sprintId?: string;
+  lastCompletedSprintId?: number;
   projectId: string;
   assigneeId?: string;
   parentId?: string;
@@ -88,14 +89,8 @@ export const mapSprintToFrontend = (sprint: BackendTypes.Sprint): FrontendSprint
 });
 
 export const mapIssueToFrontend = (issue: BackendTypes.Issue): FrontendIssue => {
-  // Map backend status to frontend status
-  const statusMap: Record<BackendTypes.IssueStatus, FrontendIssue['status']> = {
-    [BackendTypes.IssueStatus.BACKLOG]: 'BACKLOG',
-    [BackendTypes.IssueStatus.SELECTED_FOR_DEVELOPMENT]: 'SELECTED',
-    [BackendTypes.IssueStatus.IN_PROGRESS]: 'IN_PROGRESS',
-    [BackendTypes.IssueStatus.IN_REVIEW]: 'IN_REVIEW',
-    [BackendTypes.IssueStatus.DONE]: 'DONE',
-  };
+  // Status is already the correct enum type from backend
+  const status = issue.status;
 
   // Map backend priority to frontend priority
   const priorityMap: Record<BackendTypes.Priority, FrontendIssue['priority']> = {
@@ -131,11 +126,12 @@ export const mapIssueToFrontend = (issue: BackendTypes.Issue): FrontendIssue => 
     key: issueKey,
     title: issue.title,
     description: issue.description,
-    status: statusMap[issue.status],
+    status: status,
     priority: priorityMap[issue.priority],
     type: issueType,
     storyPoints: issue.storyPoints,
     sprintId: issue.sprintId?.toString(),
+    lastCompletedSprintId: issue.lastCompletedSprintId,
     projectId: issue.projectId.toString(),
     assigneeId: undefined, // Not in backend Issue DTO yet
     parentId: issue.parentIssueId?.toString(),
@@ -167,14 +163,7 @@ export const mapProjectToBackend = (project: Partial<FrontendProject>): BackendT
 });
 
 export const mapIssueToBackend = (issue: Partial<FrontendIssue>): Partial<BackendTypes.CreateIssueRequest> => {
-  // Map frontend status to backend status
-  const statusMap: Record<FrontendIssue['status'], BackendTypes.IssueStatus> = {
-    'BACKLOG': BackendTypes.IssueStatus.BACKLOG,
-    'SELECTED': BackendTypes.IssueStatus.SELECTED_FOR_DEVELOPMENT,
-    'IN_PROGRESS': BackendTypes.IssueStatus.IN_PROGRESS,
-    'IN_REVIEW': BackendTypes.IssueStatus.IN_REVIEW,
-    'DONE': BackendTypes.IssueStatus.DONE,
-  };
+  // Status is already the correct enum type, no mapping needed
 
   // Map frontend priority to backend priority
   const priorityMap: Record<FrontendIssue['priority'], BackendTypes.Priority> = {
@@ -225,16 +214,9 @@ export const mapLabelToBackend = (label: Partial<FrontendLabel>): BackendTypes.C
 
 // Status update mapping
 export const mapStatusToBackend = (status: FrontendIssue['status']): BackendTypes.StatusUpdateRequest => {
-  const statusMap: Record<FrontendIssue['status'], BackendTypes.IssueStatus> = {
-    'BACKLOG': BackendTypes.IssueStatus.BACKLOG,
-    'SELECTED': BackendTypes.IssueStatus.SELECTED_FOR_DEVELOPMENT,
-    'IN_PROGRESS': BackendTypes.IssueStatus.IN_PROGRESS,
-    'IN_REVIEW': BackendTypes.IssueStatus.IN_REVIEW,
-    'DONE': BackendTypes.IssueStatus.DONE,
-  };
-
+  // Status is already the correct enum type, no mapping needed
   return {
-    newStatus: statusMap[status], // Backend expects "newStatus" field
+    newStatus: status, // Backend expects "newStatus" field
   };
 };
 

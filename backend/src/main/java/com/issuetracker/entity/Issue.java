@@ -46,6 +46,10 @@ public class Issue {
     private Sprint sprint;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_completed_sprint_id")
+    private Sprint lastCompletedSprint;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "issue_type_id", nullable = false)
     private IssueType issueType;
 
@@ -158,6 +162,14 @@ public class Issue {
 
     public void setSprint(Sprint sprint) {
         this.sprint = sprint;
+    }
+
+    public Sprint getLastCompletedSprint() {
+        return lastCompletedSprint;
+    }
+
+    public void setLastCompletedSprint(Sprint lastCompletedSprint) {
+        this.lastCompletedSprint = lastCompletedSprint;
     }
 
     public IssueType getIssueType() {

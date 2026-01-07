@@ -25,6 +25,10 @@ public class InvalidSprintOperationException extends RuntimeException {
         return new InvalidSprintOperationException("Sprint is not active and cannot be completed");
     }
 
+    public static InvalidSprintOperationException sprintNotCompleted() {
+        return new InvalidSprintOperationException("Sprint is not completed");
+    }
+
     public static InvalidSprintOperationException overlappingSprints() {
         return new InvalidSprintOperationException("Sprint dates overlap with existing sprint");
     }

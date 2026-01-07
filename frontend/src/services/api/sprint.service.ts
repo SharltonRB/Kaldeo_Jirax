@@ -95,10 +95,12 @@ class SprintApiService extends BaseApiService<Sprint, CreateSprintRequest, Updat
   }
 
   /**
-   * Get sprint issues
+   * Get sprint issues (works for both active and completed sprints)
+   * For completed sprints, returns both completed issues and incomplete issues with red aura indicator
    */
-  async getSprintIssues(id: number, params?: PageRequest): Promise<PageResponse<Issue>> {
-    return api.get<PageResponse<Issue>>(`${this.baseUrl}/${id}/issues`, { params });
+  async getSprintIssues(id: number, params?: PageRequest): Promise<Issue[]> {
+    const response = await api.get<Issue[]>(`${this.baseUrl}/${id}/issues`, { params });
+    return response;
   }
 
   /**

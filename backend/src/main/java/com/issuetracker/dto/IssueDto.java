@@ -50,6 +50,9 @@ public class IssueDto {
     private Long sprintId;
     private String sprintName;
     
+    private Long lastCompletedSprintId;
+    private String lastCompletedSprintName;
+    
     private Long issueTypeId;
     private String issueTypeName;
     
@@ -180,6 +183,22 @@ public class IssueDto {
 
     public void setSprintName(String sprintName) {
         this.sprintName = sprintName;
+    }
+
+    public Long getLastCompletedSprintId() {
+        return lastCompletedSprintId;
+    }
+
+    public void setLastCompletedSprintId(Long lastCompletedSprintId) {
+        this.lastCompletedSprintId = lastCompletedSprintId;
+    }
+
+    public String getLastCompletedSprintName() {
+        return lastCompletedSprintName;
+    }
+
+    public void setLastCompletedSprintName(String lastCompletedSprintName) {
+        this.lastCompletedSprintName = lastCompletedSprintName;
     }
 
     public Long getIssueTypeId() {

@@ -194,6 +194,29 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     List<Issue> findByUserAndSprint(User user, Sprint sprint);
 
     /**
+     * Finds issues assigned to a sprint for a user with specific status.
+     *
+     * @param user the issue owner
+     * @param sprint the sprint
+     * @param status the issue status
+     * @return list of issues
+     */
+    List<Issue> findByUserAndSprintAndStatus(User user, Sprint sprint, IssueStatus status);
+
+    /**
+     * Finds issues that were part of a completed sprint (both completed and incomplete).
+     * This includes issues still in the sprint (DONE) and issues that were moved to backlog
+     * but have the lastCompletedSprint reference.
+     *
+     * @param user the issue owner
+     * @param sprint the completed sprint
+     * @return list of issues that were part of the sprint
+     */
+    @Query("SELECT i FROM Issue i WHERE i.user = :user AND " +
+           "(i.sprint = :sprint OR i.lastCompletedSprint = :sprint)")
+    List<Issue> findByUserAndCompletedSprint(@Param("user") User user, @Param("sprint") Sprint sprint);
+
+    /**
      * Deletes an issue by ID and user for data isolation.
      *
      * @param id issue ID

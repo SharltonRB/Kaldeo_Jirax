@@ -246,14 +246,28 @@ public class SprintService {
             throw InvalidSprintOperationException.sprintNotActive();
         }
 
-        // Move incomplete issues back to backlog
+        // Move incomplete issues back to backlog and track completed sprint
         List<Issue> sprintIssues = issueRepository.findByUserAndSprint(user, sprint);
+        logger.info("🔍 Found {} total issues in sprint {}", sprintIssues.size(), sprint.getId());
+        
         int movedIssues = 0;
         for (Issue issue : sprintIssues) {
+            logger.info("🔍 Processing issue {} with status {}", issue.getId(), issue.getStatus());
             if (issue.getStatus() != IssueStatus.DONE) {
+                logger.info("🔄 Moving incomplete issue {} to backlog and marking with completed sprint {}", 
+                           issue.getId(), sprint.getId());
+                
+                // Set reference to completed sprint before removing from current sprint
+                issue.setLastCompletedSprint(sprint);
                 issue.setSprint(null); // Remove from sprint (back to backlog)
+                issue.setStatus(IssueStatus.BACKLOG); // Ensure status is BACKLOG
                 issueRepository.save(issue);
                 movedIssues++;
+                
+                logger.info("✅ Issue {} successfully moved to backlog and marked as incomplete from sprint {}", 
+                           issue.getId(), sprint.getId());
+            } else {
+                logger.info("✅ Issue {} is DONE, keeping in sprint {}", issue.getId(), sprint.getId());
             }
         }
 
@@ -347,6 +361,40 @@ public class SprintService {
     }
 
     /**
+     * Retrieves all issues that were completed in a sprint.
+     * Only returns issues with status DONE that were part of the sprint.
+     *
+     * @param sprintId the completed sprint ID
+     * @param user the sprint owner
+     * @return list of completed issues from the sprint
+     * @throws ResourceNotFoundException if sprint not found or not owned by user
+     * @throws InvalidSprintOperationException if sprint is not completed
+     */
+    @Transactional(readOnly = true)
+    public List<Issue> getCompletedSprintIssues(Long sprintId, User user) {
+        logger.info("🔍 Retrieving completed issues for sprint {} for user {}", sprintId, user.getId());
+
+        Sprint sprint = sprintRepository.findByIdAndUser(sprintId, user)
+                .orElseThrow(() -> ResourceNotFoundException.sprint(sprintId));
+
+        if (sprint.getStatus() != SprintStatus.COMPLETED) {
+            logger.warn("❌ Sprint {} is not completed, status: {}", sprintId, sprint.getStatus());
+            throw InvalidSprintOperationException.sprintNotCompleted();
+        }
+
+        // Only get issues that are DONE and still in this sprint
+        List<Issue> completedIssues = issueRepository.findByUserAndSprintAndStatus(user, sprint, IssueStatus.DONE);
+        logger.info("🔍 Found {} completed issues for sprint {}", completedIssues.size(), sprintId);
+        
+        for (Issue issue : completedIssues) {
+            logger.info("🔍 Completed Issue {}: status={}, title={}", 
+                       issue.getId(), issue.getStatus(), issue.getTitle());
+        }
+        
+        return completedIssues;
+    }
+
+    /**
      * Deletes a sprint and removes it from all associated issues.
      *
      * @param sprintId the sprint ID
@@ -371,6 +419,62 @@ public class SprintService {
 
         logger.info("Deleted sprint '{}' (ID: {}) for user {} - removed from {} issues", 
                    sprint.getName(), sprint.getId(), user.getId(), sprintIssues.size());
+    }
+
+    /**
+     * Adds issues to a sprint and updates their status appropriately.
+     * If the sprint is ACTIVE, issues are moved to SELECTED_FOR_DEVELOPMENT.
+     * If the sprint is PLANNED, issues remain in BACKLOG status.
+     *
+     * @param sprintId the sprint ID
+     * @param issueIds the list of issue IDs to add
+     * @param user the sprint owner
+     * @return list of updated issue DTOs
+     * @throws ResourceNotFoundException if sprint or issues not found or not owned by user
+     */
+    public List<Issue> addIssuesToSprint(Long sprintId, List<Long> issueIds, User user) {
+        logger.info("📋 Adding {} issues to sprint {} for user: {}", issueIds.size(), sprintId, user.getEmail());
+
+        Sprint sprint = sprintRepository.findByIdAndUser(sprintId, user)
+                .orElseThrow(() -> ResourceNotFoundException.sprint(sprintId));
+
+        List<Issue> updatedIssues = new ArrayList<>();
+
+        for (Long issueId : issueIds) {
+            Issue issue = issueRepository.findByIdAndUser(issueId, user)
+                    .orElseThrow(() -> ResourceNotFoundException.issue(issueId));
+
+            // Assign issue to sprint
+            issue.setSprint(sprint);
+
+            // Update status based on sprint status
+            IssueStatus oldStatus = issue.getStatus();
+            if (sprint.getStatus() == SprintStatus.ACTIVE) {
+                // If sprint is active, move issue to SELECTED_FOR_DEVELOPMENT
+                issue.setStatus(IssueStatus.SELECTED_FOR_DEVELOPMENT);
+                logger.info("🔄 Issue {} moved to SELECTED_FOR_DEVELOPMENT (sprint is ACTIVE)", issueId);
+            } else {
+                // If sprint is planned, keep issue in BACKLOG
+                issue.setStatus(IssueStatus.BACKLOG);
+                logger.info("📋 Issue {} kept in BACKLOG (sprint is PLANNED)", issueId);
+            }
+
+            Issue savedIssue = issueRepository.save(issue);
+            updatedIssues.add(savedIssue);
+
+            // Log the status change for audit if status changed
+            if (oldStatus != issue.getStatus()) {
+                auditService.logStatusChange(issue, user, oldStatus, issue.getStatus());
+            }
+
+            logger.info("✅ Issue {} added to sprint {} with status {}", 
+                       issueId, sprintId, issue.getStatus());
+        }
+
+        logger.info("✅ Successfully added {} issues to sprint {} for user: {}", 
+                   updatedIssues.size(), sprintId, user.getEmail());
+
+        return updatedIssues;
     }
 
     /**

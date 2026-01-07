@@ -46,6 +46,8 @@ export interface Issue {
   projectKey?: string;
   sprintId?: number;
   sprintName?: string;
+  lastCompletedSprintId?: number;
+  lastCompletedSprintName?: string;
   issueTypeId: number;
   issueTypeName: string;
   labels?: Label[];

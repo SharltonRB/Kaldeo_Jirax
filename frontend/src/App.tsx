@@ -38,8 +38,11 @@ EyeOff} from 'lucide-react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useAppProjects } from '@/hooks/useAppProjects';
 import { useIssues, useCreateIssue, useUpdateIssue, useUpdateIssueStatus, useDeleteIssue } from '@/hooks/useIssues';
-import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useStartSprint, useCompleteSprint } from '@/hooks/useSprints';
+import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useStartSprint, useCompleteSprint, useCompletedSprintIssues } from '@/hooks/useSprints';
 import { useLabels } from '@/hooks/useLabels';
+import { sprintService } from '@/services/api/sprint.service';
+import { IssueStatus } from '@/types';
+import { FrontendIssue } from '@/utils/api-response';
 import SprintCalendar from '@/components/ui/SprintCalendar';
 
 /***
@@ -83,26 +86,10 @@ type Sprint = {
   goal?: string;
 };
 
-type IssueStatus = 'BACKLOG' | 'SELECTED' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
 type IssuePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 type IssueType = 'STORY' | 'TASK' | 'BUG' | 'EPIC';
 
-type Issue = {
-  id: string;
-  key: string; 
-  title: string;
-  description?: string;
-  status: IssueStatus;
-  priority: IssuePriority;
-  type: IssueType;
-  storyPoints?: number;
-  sprintId?: string;
-  projectId: string;
-  assigneeId?: string;
-  parentId?: string; 
-  updatedAt?: string;
-  comments?: Comment[];
-};
+type Issue = FrontendIssue;
 
 type Label = {
   id: string;
@@ -191,6 +178,7 @@ interface AppContextType extends AppState {
   startSprint: (sprintId: string, newStartDate?: string, newEndDate?: string) => void;
   navigateToIssue: (id: string) => void;
   goBackIssue: () => void;
+  refetchIssues: () => Promise<any>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -231,7 +219,8 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const { 
     data: issues = [], 
-    isLoading: issuesLoading 
+    isLoading: issuesLoading,
+    refetch: refetchIssues
   } = useIssues(isAuthenticated ? {} : undefined);
   
   const createIssueMutation = useCreateIssue();
@@ -438,12 +427,12 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
           console.log(`Moving issue ${issue.key} from ${issue.status} to BACKLOG`);
           
           // First update the status to BACKLOG
-          await updateIssueStatus(issue.id, 'BACKLOG');
+          await updateIssueStatus(issue.id, IssueStatus.BACKLOG);
           
           // Then update the full issue to remove sprint assignment
           const updatedIssue: Issue = {
             ...issue,
-            status: 'BACKLOG',
+            status: IssueStatus.BACKLOG,
             sprintId: undefined // Remove from sprint
           };
           await updateIssue(updatedIssue);
@@ -499,7 +488,7 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
       navigateToIssue, goBackIssue,
       addIssue, updateIssue, deleteIssue, updateIssueStatus, 
       createProject, deleteProject, createSprint, updateSprint, deleteSprint, 
-      addComment, completeSprint, startSprint
+      addComment, completeSprint, startSprint, refetchIssues
     }}>
       {children}
     </AppContext.Provider>
@@ -805,7 +794,7 @@ const DeleteProjectConfirmationModal = ({ isOpen, onClose, onConfirm, project }:
 const DeleteConfirmationModal = ({ isOpen, onClose, issue, onDelete, onMoveToBacklog }: { isOpen: boolean, onClose: () => void, issue: Issue | null, onDelete: () => void, onMoveToBacklog: () => void }) => {
   if (!isOpen || !issue) return null;
 
-  const isBacklog = issue.status === 'BACKLOG';
+  const isBacklog = issue.status === IssueStatus.BACKLOG;
   const isEpic = issue.type === 'EPIC';
 
   return (
@@ -1035,11 +1024,54 @@ const BacklogPickerModal = ({ isOpen, onClose, onAdd, currentSprintId }: { isOpe
 
   if (!isOpen) return null;
 
-  const availableIssues = issues.filter(i => i.sprintId !== currentSprintId && i.status !== 'DONE');
+  const availableIssues = issues.filter(i => {
+    // Exclude issues that are already DONE
+    if (i.status === 'DONE') {
+      console.log(`❌ Excluding ${i.id} (${i.title}): status is DONE`);
+      return false;
+    }
+    
+    // If issue is in BACKLOG status, it should be available regardless of sprintId
+    if (i.status === IssueStatus.BACKLOG) {
+      console.log(`✅ Including ${i.id} (${i.title}): status is BACKLOG (ignoring sprintId=${i.sprintId})`);
+      return true;
+    }
+    
+    // For non-backlog issues, exclude if they're in the current sprint
+    if (i.sprintId && i.sprintId === currentSprintId) {
+      console.log(`❌ Excluding ${i.id} (${i.title}): already in current sprint`);
+      return false;
+    }
+    
+    // Include all other issues
+    console.log(`✅ Including ${i.id} (${i.title}): status=${i.status}, sprintId=${i.sprintId}`);
+    return true;
+  });
+  
+  console.log(`🔍 Total issues: ${issues.length}, Available issues: ${availableIssues.length}`);
   const projectList = projects;
   const projectIssues = availableIssues.filter(i => i.projectId === selectedProjectId);
   const epics = projectIssues.filter(i => i.type === 'EPIC');
   const orphanIssues = projectIssues.filter(i => i.type !== 'EPIC' && !i.parentId);
+  
+  console.log(`🔍 Project ${selectedProjectId}:`, {
+    totalAvailable: availableIssues.length,
+    projectIssues: projectIssues.length,
+    epics: epics.length,
+    orphanIssues: orphanIssues.length
+  });
+  
+  if (selectedProjectId) {
+    projectIssues.forEach(issue => {
+      console.log(`🔍 Project issue ${issue.id}:`, {
+        title: issue.title,
+        type: issue.type,
+        parentId: issue.parentId,
+        status: issue.status,
+        sprintId: issue.sprintId
+      });
+    });
+  }
 
   const toggleEpic = (id: string) => {
     setExpandedEpics(prev => prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]);
@@ -1055,7 +1087,7 @@ const BacklogPickerModal = ({ isOpen, onClose, onAdd, currentSprintId }: { isOpe
   const handleConfirmSelection = () => {
     const selectedIssuesList = issues.filter(i => selectedIssueIds.has(i.id));
     onAdd(selectedIssuesList);
-    onClose();
+    // Don't close here - let the onAdd handler manage the modal state
   };
 
   const SelectionCheckbox = ({ id }: { id: string }) => {
@@ -1280,7 +1312,7 @@ const CreateIssueModal = () => {
     title: '',
     type: 'TASK',
     priority: 'MEDIUM',
-    status: 'BACKLOG',
+    status: IssueStatus.BACKLOG,
     projectId: projects[0]?.id || '',
     parentId: '',
     description: ''
@@ -1317,7 +1349,7 @@ const CreateIssueModal = () => {
         title: '',
         type: 'TASK',
         priority: 'MEDIUM',
-        status: 'BACKLOG',
+        status: IssueStatus.BACKLOG,
         projectId: projects[0]?.id || '',
         parentId: '',
         description: ''
@@ -1601,7 +1633,7 @@ const IssueDetailModal = () => {
     if (formData) {
       try {
         // Update status to BACKLOG and remove from sprint
-        await updateIssueStatus(formData.id, 'BACKLOG');
+        await updateIssueStatus(formData.id, IssueStatus.BACKLOG);
         
         // Update other fields (remove sprint assignment)
         const updatedIssue = { ...formData, sprintId: undefined };
@@ -1671,11 +1703,11 @@ const IssueDetailModal = () => {
                   onChange={(e) => setFormData({...formData, status: e.target.value as IssueStatus})}
                   className="w-full appearance-none bg-white dark:bg-[#1e293b] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-blue-500 transition-colors font-medium shadow-sm"
                 >
-                  <option value="BACKLOG">Backlog</option>
-                  <option value="SELECTED">Selected</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="IN_REVIEW">In Review</option>
-                  <option value="DONE">Done</option>
+                  <option value={IssueStatus.BACKLOG}>Backlog</option>
+                  <option value={IssueStatus.SELECTED_FOR_DEVELOPMENT}>Selected</option>
+                  <option value={IssueStatus.IN_PROGRESS}>In Progress</option>
+                  <option value={IssueStatus.IN_REVIEW}>In Review</option>
+                  <option value={IssueStatus.DONE}>Done</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-500 pointer-events-none" />
               </div>
@@ -2173,9 +2205,9 @@ const ProjectsList = () => {
 
   const groupIssuesByStatus = (issuesList: Issue[]) => {
     return {
-      backlog: issuesList.filter(i => ['BACKLOG', 'SELECTED'].includes(i.status)),
-      inProgress: issuesList.filter(i => ['IN_PROGRESS', 'IN_REVIEW'].includes(i.status)),
-      completed: issuesList.filter(i => i.status === 'DONE')
+      backlog: issuesList.filter(i => [IssueStatus.BACKLOG, IssueStatus.SELECTED_FOR_DEVELOPMENT].includes(i.status)),
+      inProgress: issuesList.filter(i => [IssueStatus.IN_PROGRESS, IssueStatus.IN_REVIEW].includes(i.status)),
+      completed: issuesList.filter(i => i.status === IssueStatus.DONE)
     };
   };
 
@@ -2573,11 +2605,182 @@ const ProjectsList = () => {
     </div>
   );
 };
+// --- COMPLETED SPRINT VIEW MODAL ---
+const CompletedSprintViewModal = ({ isOpen, onClose, sprint, onIssueClick, onDelete }: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  sprint: Sprint, 
+  onIssueClick: (id: string) => void,
+  onDelete: (sprintId: string) => void
+}) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { data: sprintIssues = [], isLoading } = useCompletedSprintIssues(
+    parseInt(sprint.id), 
+    isOpen && sprint.status === 'COMPLETED'
+  );
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    onDelete(sprint.id);
+    setShowDeleteConfirm(false);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  // Solo mostrar issues que fueron completados (DONE) en este sprint
+  const completedIssues = sprintIssues.filter(issue => 
+    issue.status === 'DONE' && (issue.sprintId === parseInt(sprint.id) || issue.lastCompletedSprintId === parseInt(sprint.id))
+  );
+
+  return (
+    <div className="fixed inset-0 z-[50] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+      <GlassCard className="w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col bg-white/90 dark:bg-[#09090b]/90 shadow-2xl border-white/20 backdrop-blur-2xl">
+        <div className="p-6 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
+          <div>
+            <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
+              <CheckSquare className="w-6 h-6 text-green-500" />
+              {sprint.name} - Completed Sprint
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
+            </p>
+            {sprint.goal && (
+              <p className="text-sm text-gray-600 dark:text-gray-300 italic mt-1">
+                Goal: "{sprint.goal}"
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <GlassButton 
+              variant="danger" 
+              onClick={handleDeleteClick}
+              className="text-sm"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </GlassButton>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto">
+              {/* Completed Issues */}
+              <div>
+                <h4 className="font-bold text-gray-800 dark:text-white flex items-center gap-2 mb-6">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  Completed Issues ({completedIssues.length})
+                </h4>
+                <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                  {completedIssues.map(issue => (
+                    <div 
+                      key={issue.id}
+                      onClick={() => onIssueClick(issue.id.toString())}
+                      className="bg-white/80 dark:bg-[#1e293b]/80 p-4 rounded-xl border border-green-200 dark:border-green-800/30 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-xs font-mono text-gray-500">{issue.id}</span>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <Badge color="green">DONE</Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">{issue.title}</p>
+                      <div className="flex justify-between items-center">
+                        <div className="flex gap-1">
+                          <span className="text-[10px] bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300">
+                            {issue.status}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded text-white ${
+                            issue.priority === 'CRITICAL' ? 'bg-red-500' : 
+                            issue.priority === 'HIGH' ? 'bg-orange-500' : 
+                            issue.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-blue-500'
+                          }`}>
+                            {issue.priority}
+                          </span>
+                        </div>
+                        {issue.storyPoints && (
+                          <div className="bg-gray-200 dark:bg-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-[10px] font-bold">
+                            {issue.storyPoints}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {completedIssues.length === 0 && (
+                    <div className="text-center text-gray-500 py-12">
+                      <CheckCircle2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">No issues were completed in this sprint</p>
+                      <p className="text-sm">This sprint was completed without any finished issues.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-between items-center">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Sprint completed with {completedIssues.length} finished issue{completedIssues.length !== 1 ? 's' : ''}
+          </div>
+          <GlassButton onClick={onClose}>Close</GlassButton>
+        </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+            <GlassCard className="w-full max-w-sm p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Delete Completed Sprint?</h3>
+                <p className="text-sm text-gray-500 mt-2">
+                  This will permanently delete the sprint <span className="font-bold">"{sprint.name}"</span> and its history.
+                </p>
+                <p className="text-xs text-red-500 mt-2 font-semibold">
+                  Issues will remain in their current locations (backlog/done).
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              </div>
+            </GlassCard>
+          </div>
+        )}
+      </GlassCard>
+    </div>
+  );
+};
+
 // --- SPRINT MANAGEMENT LIST ---
 const SprintsList = () => {
-  const { sprints, createSprint, updateSprint, navigate, issues, setSelectedIssueId, updateIssue, startSprint, deleteSprint } = useApp();
+  const { sprints, createSprint, updateSprint, navigate, issues, setSelectedIssueId, updateIssue, startSprint, deleteSprint, refetchIssues } = useApp();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
+  const [viewingCompletedSprint, setViewingCompletedSprint] = useState<Sprint | null>(null);
   const [newSprint, setNewSprint] = useState({ name: '', startDate: '', endDate: '', goal: '' });
   const [showBacklogPicker, setShowBacklogPicker] = useState(false);
   const [showActivationModal, setShowActivationModal] = useState(false);
@@ -2591,6 +2794,8 @@ const SprintsList = () => {
   const handleSprintClick = (sprint: Sprint) => {
     if (sprint.status === 'ACTIVE') {
       navigate('kanban');
+    } else if (sprint.status === 'COMPLETED') {
+      setViewingCompletedSprint(sprint);
     } else {
       setEditingSprint(sprint);
     }
@@ -2607,19 +2812,33 @@ const SprintsList = () => {
     updateIssue({
       ...issue,
       sprintId: undefined,
-      status: 'BACKLOG'
+      status: IssueStatus.BACKLOG
     });
   };
 
-  const handleAddIssuesFromBacklog = (selectedIssues: Issue[]) => {
+  const handleAddIssuesFromBacklog = async (selectedIssues: Issue[]) => {
+    console.log('🔍 handleAddIssuesFromBacklog called with:', selectedIssues);
     if (editingSprint) {
-      selectedIssues.forEach(issue => {
-        updateIssue({
-          ...issue,
-          sprintId: editingSprint.id,
-          status: 'SELECTED' 
-        });
-      });
+      try {
+        console.log('🔍 editingSprint:', editingSprint);
+        const issueIds = selectedIssues.map(issue => parseInt(issue.id));
+        console.log('🔍 issueIds:', issueIds);
+        console.log('🔍 Calling sprintService.addIssuesToSprint...');
+        await sprintService.addIssuesToSprint(parseInt(editingSprint.id), issueIds);
+        
+        console.log('🔍 Successfully added issues, refreshing...');
+        // Refresh issues to get updated data from backend
+        await refetchIssues();
+        
+        // Close the backlog picker
+        setShowBacklogPicker(false);
+        
+        // Show success message
+        console.log(`✅ Successfully added ${selectedIssues.length} issues to sprint`);
+      } catch (error) {
+        console.error('❌ Failed to add issues to sprint:', error);
+        // You could add a toast notification here
+      }
     }
   };
 
@@ -3072,6 +3291,17 @@ const SprintsList = () => {
           sprint={editingSprint}
         />
       )}
+
+      {/* Completed Sprint View Modal */}
+      {viewingCompletedSprint && (
+        <CompletedSprintViewModal 
+          isOpen={!!viewingCompletedSprint}
+          onClose={() => setViewingCompletedSprint(null)}
+          sprint={viewingCompletedSprint}
+          onIssueClick={setSelectedIssueId}
+          onDelete={deleteSprint}
+        />
+      )}
     </div>
   );
 };
@@ -3085,7 +3315,7 @@ const KanbanColumn = ({ status, issues, onDrop, onEdit }: { status: IssueStatus,
 
   const statusColors = {
     'BACKLOG': 'border-gray-300 dark:border-gray-700',
-    'SELECTED': 'border-blue-300 dark:border-blue-700',
+    'SELECTED_FOR_DEVELOPMENT': 'border-blue-300 dark:border-blue-700',
     'IN_PROGRESS': 'border-yellow-300 dark:border-yellow-700',
     'IN_REVIEW': 'border-purple-300 dark:border-purple-700',
     'DONE': 'border-green-300 dark:border-green-700',
@@ -3093,7 +3323,7 @@ const KanbanColumn = ({ status, issues, onDrop, onEdit }: { status: IssueStatus,
 
   const statusTitles = {
     'BACKLOG': 'Backlog',
-    'SELECTED': 'Selected',
+    'SELECTED_FOR_DEVELOPMENT': 'Selected',
     'IN_PROGRESS': 'In Progress',
     'IN_REVIEW': 'Review',
     'DONE': 'Done'
@@ -3147,7 +3377,7 @@ const KanbanColumn = ({ status, issues, onDrop, onEdit }: { status: IssueStatus,
 };
 
 const SprintBoard = () => {
-  const { issues, sprints, updateIssueStatus, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, completeSprint, updateIssue, searchQuery, navigate } = useApp();
+  const { issues, sprints, updateIssueStatus, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, completeSprint, updateIssue, searchQuery, navigate, refetchIssues } = useApp();
   const activeSprint = sprints.find(s => s.status === 'ACTIVE');
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showBacklogPicker, setShowBacklogPicker] = useState(false);
@@ -3179,7 +3409,7 @@ const SprintBoard = () => {
   };
 
   const handleCreateNew = () => {
-    setCreateIssueInitialData({ sprintId: activeSprint?.id, status: 'SELECTED' });
+    setCreateIssueInitialData({ sprintId: activeSprint?.id, status: IssueStatus.SELECTED_FOR_DEVELOPMENT });
     setCreateIssueModalOpen(true);
     setShowAddMenu(false);
   };
@@ -3189,17 +3419,30 @@ const SprintBoard = () => {
     setShowAddMenu(false);
   };
 
-  const handleBacklogSelect = (selectedIssues: Issue[]) => {
+  const handleBacklogSelect = async (selectedIssues: Issue[]) => {
     // Move issues to current sprint (Multi-Select)
+    console.log('🔍 handleBacklogSelect called with:', selectedIssues);
     if (activeSprint) {
-      selectedIssues.forEach(issue => {
-        updateIssue({
-          ...issue,
-          sprintId: activeSprint.id,
-          status: 'SELECTED'
-        });
-      });
-      setShowBacklogPicker(false);
+      try {
+        console.log('🔍 activeSprint:', activeSprint);
+        const issueIds = selectedIssues.map(issue => parseInt(issue.id));
+        console.log('🔍 issueIds:', issueIds);
+        console.log('🔍 Calling sprintService.addIssuesToSprint...');
+        await sprintService.addIssuesToSprint(parseInt(activeSprint.id), issueIds);
+        
+        console.log('🔍 Successfully added issues, refreshing...');
+        // Refresh issues to get updated data from backend
+        await refetchIssues();
+        
+        // Close the backlog picker
+        setShowBacklogPicker(false);
+        
+        // Show success message
+        console.log(`✅ Successfully added ${selectedIssues.length} issues to sprint`);
+      } catch (error) {
+        console.error('❌ Failed to add issues to sprint:', error);
+        // You could add a toast notification here
+      }
     }
   };
 
@@ -3234,7 +3477,7 @@ const SprintBoard = () => {
      i.key.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const columns: IssueStatus[] = ['SELECTED', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
+  const columns: IssueStatus[] = [IssueStatus.SELECTED_FOR_DEVELOPMENT, IssueStatus.IN_PROGRESS, IssueStatus.IN_REVIEW, IssueStatus.DONE];
 
   return (
     <div className="h-[calc(100vh-140px)] flex flex-col relative">
