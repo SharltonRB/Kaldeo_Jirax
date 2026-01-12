@@ -290,201 +290,153 @@ The implementation uses Java 21 with Spring Boot 3.x for the backend and React T
     - **NO MODIFICAR UI EXISTENTE** - solo conectar funcionalidad
     - _Requirements: 4.3, 10.3, 8.2_
 
-- [ ] 15. Dashboard and Analytics Integration
-  **CRITICAL**: NO crear nuevas páginas de frontend. El Dashboard ya está completamente implementado en App.tsx. Solo conectar con backend.
+- [ ] 15. Fix Authentication Integration Issue
+  **CRITICAL**: Resolver el problema de autenticación JWT que impide la integración completa frontend-backend.
   
-  - [ ] 15.1 Connect existing dashboard to backend metrics
-    - Replace mock data in AppContext with real API calls using dashboardService
-    - Connect existing Dashboard component (línea ~1792 en App.tsx) to backend getDashboardMetrics API
-    - Integrate existing sprint summary display with backend getActiveSprintSummary API
-    - Connect existing issue statistics to real backend data
-    - Connect existing recent issues list to backend getRecentIssues API
-    - Replace in-memory calculations with backend-calculated metrics
-    - **NO CREAR NUEVOS WIDGETS** - usar componentes existentes
-    - _Requirements: 8.1, 8.2, 8.3, 10.1, 12.3_
+  - [ ] 15.1 Debug and fix JWT authentication error
+    - Investigate 401 authentication error in backend when frontend tries to login
+    - Check JWT secret configuration in backend application properties
+    - Verify JWT token generation and validation logic in JwtService
+    - Test authentication flow with correct credentials
+    - Ensure CORS configuration allows frontend requests
+    - _Requirements: 1.2, 1.4, 9.5_
 
-  - [ ] 15.2 Integrate existing dashboard features with backend
-    - Connect existing search functionality to backend search APIs
-    - Integrate existing project quick access with real backend project data
-    - Connect existing issue status distribution charts to backend metrics
-    - Maintain all existing glass-design styling and animations
-    - **NO AGREGAR NUEVAS FUNCIONALIDADES** sin autorización del usuario
-    - _Requirements: 8.2, 8.3, 20.1, 20.3_
+  - [ ] 15.2 Complete authentication integration testing
+    - Test login/register flow from frontend to backend
+    - Verify JWT token storage and usage in frontend
+    - Test protected routes and API calls with authentication
+    - Validate user session management and logout functionality
+    - _Requirements: 1.1, 1.3, 15.1_
 
-- [ ] 16. Label and Comment System Integration
-  **CRITICAL**: NO crear nuevas páginas de frontend. Los sistemas de labels y comentarios ya están implementados en App.tsx. Solo conectar con backend.
+- [ ] 16. Complete Frontend-Backend API Integration
+  **CRITICAL**: Finalizar la conexión de todas las APIs del frontend con el backend.
   
-  - [ ] 16.1 Connect existing label functionality to backend (SI EXISTE)
-    - Verificar si el frontend tiene funcionalidad de labels implementada
-    - Si existe, conectar con backend labelService APIs
-    - Si no existe, **PREGUNTAR AL USUARIO** antes de implementar
-    - Mantener consistencia con el diseño glass existente
-    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+  - [ ] 16.1 Complete remaining API integrations
+    - Finish connecting dashboard metrics to backend DashboardController
+    - Complete comment system integration with CommentController
+    - Integrate any remaining issue management features
+    - Test all CRUD operations work correctly with real backend data
+    - _Requirements: 6.1, 6.2, 8.1, 8.2_
 
-  - [ ] 16.2 Connect existing comment system to backend
-    - Connect existing CommentsSection component (línea ~1400 en App.tsx) to backend commentService
-    - Integrate existing comment creation with backend createComment API
-    - Connect existing comment display with backend getIssueComments API
-    - Maintain existing comment UI and markdown rendering
-    - **NO MODIFICAR UI EXISTENTE** - solo conectar funcionalidad
-    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+  - [ ] 16.2 Validate data flow and error handling
+    - Test error handling for all API calls
+    - Verify loading states work correctly
+    - Test data validation on both frontend and backend
+    - Ensure proper error messages are displayed to users
+    - _Requirements: 9.3, 13.2_
 
-- [ ] 17. Audit and History Integration
-  **CRITICAL**: NO crear nuevas páginas de frontend. Solo conectar funcionalidad de auditoría si ya existe en el frontend.
+- [ ] 17. Production Environment Setup
+  **CRITICAL**: Configurar el entorno de producción para deployment.
   
-  - [ ] 17.1 Connect existing audit functionality to backend (SI EXISTE)
-    - Verificar si el frontend tiene visualización de historial implementada
-    - Si existe, conectar con backend auditService APIs
-    - Si no existe, **PREGUNTAR AL USUARIO** antes de implementar nueva funcionalidad
-    - Mantener consistencia con el diseño glass existente
-    - _Requirements: 7.1, 7.2, 7.3, 7.5_
-
-  - [ ] 17.2 Integrate audit features only if frontend exists
-    - Solo implementar si ya existe UI para auditoría en App.tsx
-    - **NO CREAR NUEVAS INTERFACES** sin autorización del usuario
-    - Mantener todas las funcionalidades existentes intactas
-    - _Requirements: 7.4, 20.2, 15.2_
-
-- [ ] 18. Performance Optimization and Monitoring
-  **CRITICAL**: Solo optimizar el frontend existente. NO crear nuevas páginas o funcionalidades.
-  
-  - [ ] 18.1 Optimize existing frontend performance
-    - Implement React Query for caching and optimistic updates in existing components
-    - Add loading states to existing modals and components
-    - Optimize existing large lists (projects, issues, sprints) with pagination
-    - Add error boundaries to existing component structure
-    - **NO MODIFICAR ESTRUCTURA EXISTENTE** - solo optimizar
-    - _Requirements: 12.1, 19.3_
-
-  - [ ] 18.2 Integrate monitoring with existing components
-    - Add error tracking to existing API calls
-    - Implement performance monitoring for existing user interactions
-    - Connect health checks to existing authentication flow
-    - **NO CREAR NUEVOS DASHBOARDS** - usar funcionalidad existente
-    - _Requirements: 17.3, 18.2, 18.3_
-
-  - [ ] 18.3 Optimize existing state management
-    - Replace AppContext mock data with React Query cache
-    - Implement optimistic updates for existing CRUD operations
-    - Add intelligent caching for existing API calls
-    - Optimize existing React component re-renders
-    - **MANTENER TODA LA FUNCIONALIDAD EXISTENTE**
-    - _Requirements: 12.3, 12.5_
-
-- [ ] 19. Security Integration and Hardening
-  **CRITICAL**: Solo fortalecer la seguridad del frontend existente. NO crear nuevas páginas.
-  
-  - [ ] 19.1 Harden existing frontend security
-    - Add input sanitization to existing forms and modals
-    - Implement CSP headers for existing application
-    - Secure existing token storage and handling in AuthContext
-    - Add rate limiting feedback to existing authentication UI
-    - **NO MODIFICAR UI EXISTENTE** - solo agregar seguridad
-    - _Requirements: 15.1, 15.2, 15.4, 9.4_
-
-  - [ ] 19.2 Enhance existing authentication and authorization
-    - Add session timeout to existing authentication flow
-    - Implement automatic logout in existing AuthContext
-    - Add security logging for existing user actions
-    - **MANTENER FUNCIONALIDAD EXISTENTE** intacta
-    - _Requirements: 1.3, 1.5, 15.3, 15.5_
-
-- [ ] 20. Data Management and Export Integration
-  **CRITICAL**: Solo implementar si ya existe funcionalidad de exportación en el frontend. NO crear nuevas páginas.
-  
-  - [ ] 20.1 Connect existing export functionality (SI EXISTE)
-    - Verificar si el frontend tiene funcionalidad de exportación implementada
-    - Si existe, conectar con backend APIs de exportación
-    - Si no existe, **PREGUNTAR AL USUARIO** antes de implementar
-    - Mantener consistencia con el diseño existente
-    - _Requirements: 20.1, 20.3_
-
-  - [ ] 20.2 Integrate backup features only if frontend exists
-    - Solo implementar si ya existe UI para backup en App.tsx
-    - **NO CREAR NUEVAS INTERFACES** sin autorización del usuario
-    - Mantener todas las funcionalidades existentes intactas
-    - _Requirements: 20.2, 20.4, 20.5_
-
-- [ ] 21. Comprehensive Testing and Quality Assurance
-  **CRITICAL**: Probar la integración del frontend existente con el backend. NO crear nuevas funcionalidades.
-  
-  - [ ] 21.1 Test existing frontend-backend integration
-    - Test all existing user workflows (login, crear proyectos, crear issues, gestionar sprints)
-    - Verify data isolation and security measures across existing functionality
-    - Test existing responsive design and glass-design styling
-    - Validate existing modals and components work with real backend data
-    - **NO AGREGAR NUEVAS PRUEBAS** para funcionalidades no existentes
-    - _Requirements: All requirements, 16.4, 19.4_
-
-  - [ ] 21.2 Performance testing of existing functionality
-    - Load test existing components with real backend data
-    - Verify response times for existing user interactions
-    - Test existing search and filtering with large datasets
-    - Validate existing caching and memory usage
-    - **MANTENER RENDIMIENTO DE FUNCIONALIDAD EXISTENTE**
-    - _Requirements: 12.1, 12.2_
-
-  - [ ] 21.3 Security testing of existing integration
-    - Test existing authentication and authorization flows
-    - Verify existing input validation works with backend
-    - Test existing session management and token security
-    - **NO MODIFICAR FLUJOS DE SEGURIDAD EXISTENTES**
-    - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
-
-- [ ] 22. Production Deployment and Configuration
-  - [ ] 22.1 Configure production environment
-    - Set up production database with proper security
-    - Configure production API server with SSL/TLS
-    - Set up production frontend hosting with CDN
-    - Configure environment-specific settings and secrets
+  - [ ] 17.1 Configure production database and backend
+    - Set up production PostgreSQL database with proper security
+    - Configure production application.yml with environment variables
+    - Set up SSL/TLS certificates for HTTPS
+    - Configure production logging and monitoring
     - _Requirements: 17.1, 17.2, 17.4_
 
-  - [ ] 22.2 Implement CI/CD pipeline
-    - Set up automated testing and deployment pipeline
-    - Configure database migrations for production
-    - Add automated security scanning and vulnerability checks
-    - Implement blue-green deployment strategy
+  - [ ] 17.2 Configure production frontend build and hosting
+    - Optimize frontend build for production (minification, compression)
+    - Configure environment variables for production API endpoints
+    - Set up static file hosting (CDN or web server)
+    - Configure proper caching headers and security headers
+    - _Requirements: 19.3, 15.2_
+
+- [ ] 18. Essential Security Hardening
+  **CRITICAL**: Implementar medidas de seguridad esenciales para producción.
+  
+  - [ ] 18.1 Backend security hardening
+    - Configure rate limiting for all API endpoints
+    - Implement proper CORS configuration for production
+    - Add security headers (HSTS, CSP, X-Frame-Options)
+    - Configure proper error handling to avoid information leakage
+    - _Requirements: 15.1, 15.3, 15.4_
+
+  - [ ] 18.2 Frontend security hardening
+    - Implement secure token storage (httpOnly cookies or secure localStorage)
+    - Add input sanitization for user inputs
+    - Configure Content Security Policy (CSP)
+    - Implement session timeout and automatic logout
+    - _Requirements: 15.2, 15.5, 9.4_
+
+- [ ] 19. Performance Optimization for Production
+  **CRITICAL**: Optimizar el rendimiento para un entorno de producción.
+  
+  - [ ] 19.1 Backend performance optimization
+    - Configure database connection pooling
+    - Add database indexes for frequently queried fields
+    - Implement caching for dashboard metrics and frequent queries
+    - Configure proper JVM settings for production
+    - _Requirements: 12.1, 12.2_
+
+  - [ ] 19.2 Frontend performance optimization
+    - Implement code splitting and lazy loading for large components
+    - Optimize React Query cache configuration
+    - Add proper loading states and skeleton screens
+    - Optimize bundle size and implement tree shaking
+    - _Requirements: 12.3, 19.3_
+
+- [ ] 20. Integration Testing and Quality Assurance
+  **CRITICAL**: Probar exhaustivamente la integración completa del sistema.
+  
+  - [ ] 20.1 End-to-end functionality testing
+    - Test complete user workflows: register → login → create project → create issues → manage sprints
+    - Test Kanban board drag & drop functionality with real backend data
+    - Test search and filtering across all entities
+    - Verify data isolation between different users
+    - _Requirements: All core requirements_
+
+  - [ ] 20.2 Cross-browser and responsive testing
+    - Test application in major browsers (Chrome, Firefox, Safari, Edge)
+    - Test responsive design on different screen sizes
+    - Test touch interactions on mobile devices
+    - Verify glass-design styling works consistently
+    - _Requirements: 19.4_
+
+- [ ] 21. Deployment Pipeline and Monitoring
+  **CRITICAL**: Configurar deployment automatizado y monitoreo básico.
+  
+  - [ ] 21.1 Set up deployment pipeline
+    - Configure automated build and deployment for backend
+    - Set up automated frontend build and deployment
+    - Configure database migration scripts for production
+    - Set up rollback procedures in case of deployment issues
     - _Requirements: 17.3, 16.3_
 
-  - [ ] 22.3 Configure monitoring and alerting
-    - Set up application performance monitoring (APM)
-    - Configure log aggregation and analysis
-    - Add automated alerting for system issues
-    - Implement health check endpoints and monitoring
-    - _Requirements: 18.1, 18.2, 18.3, 18.4_
+  - [ ] 21.2 Implement basic monitoring and logging
+    - Configure application logging for production
+    - Set up basic health check endpoints
+    - Configure error tracking and alerting
+    - Set up basic performance monitoring
+    - _Requirements: 18.1, 18.2, 18.3_
 
-- [ ] 23. Final Integration Validation and Launch
-  - [ ] 23.1 Complete system integration testing
-    - Validate all features work correctly in production environment
-    - Test disaster recovery and backup procedures
-    - Verify all security measures are properly configured
-    - Confirm all performance requirements are met
+- [ ] 22. Final Production Validation
+  **CRITICAL**: Validación final del sistema completo en producción.
+  
+  - [ ] 22.1 Production deployment testing
+    - Deploy complete system to production environment
+    - Test all functionality works correctly in production
+    - Verify SSL certificates and security configurations
+    - Test performance under realistic load
     - _Requirements: All requirements_
 
-  - [ ] 23.2 User acceptance testing and documentation
-    - Create comprehensive user documentation and guides
-    - Conduct user acceptance testing with real scenarios
-    - Prepare system administration and maintenance guides
-    - Create troubleshooting and support documentation
+  - [ ] 22.2 User acceptance and documentation
+    - Create basic user guide and documentation
+    - Test system with real user scenarios
+    - Document any known limitations or issues
+    - Prepare maintenance and troubleshooting guide
     - _Requirements: 19.2, 19.5_
 
-  - [ ] 23.3 Production launch and monitoring
-    - Execute production deployment with rollback plan
-    - Monitor system performance and user adoption
-    - Address any immediate post-launch issues
-    - Collect user feedback and plan future improvements
-    - _Requirements: All requirements_
-
-- [ ] 24. Final Checkpoint - Production Ready System
-  **CRITICAL**: Validar que el frontend existente funciona completamente con el backend.
+- [ ] 23. Final Checkpoint - Production Ready System
+  **CRITICAL**: Sistema 100% funcional y listo para producción.
   
-  - Ensure complete frontend-backend integration is functional
-  - Verify all existing functionality (proyectos, issues, sprints, comentarios) works with real backend data
-  - Confirm existing authentication, authorization, and data isolation work correctly
-  - Validate existing user interface maintains all glass-design styling and behaviors
-  - Verify existing modals, forms, and components work seamlessly with backend APIs
-  - **SISTEMA LISTO PARA PRODUCCIÓN** con toda la funcionalidad existente conectada
-  - Ask the user if questions arise
+  - Confirm all authentication and authorization works correctly
+  - Verify all CRUD operations function properly with real data
+  - Validate security measures are properly implemented
+  - Confirm performance meets acceptable standards
+  - Ensure system is stable and ready for real users
+  - **SISTEMA COMPLETAMENTE LISTO PARA PRODUCCIÓN**
+  - Document any post-launch maintenance requirements
 
 ## REGLAS CRÍTICAS PARA TODOS LOS TASKS
 
