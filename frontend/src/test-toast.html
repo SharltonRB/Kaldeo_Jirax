@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-buttons {
+            display: grid;
+            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .success { background: rgba(34, 197, 94, 0.3); }
+        .error { background: rgba(239, 68, 68, 0.3); }
+        .warning { background: rgba(245, 158, 11, 0.3); }
+        .info { background: rgba(59, 130, 246, 0.3); }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 Toast Notification Test</h1>
+        <div class="test-buttons">
+            <button class="success" onclick="testSuccess()">✅ Test Success</button>
+            <button class="error" onclick="testError()">❌ Test Error</button>
+            <button class="warning" onclick="testWarning()">⚠️ Test Warning</button>
+            <button class="info" onclick="testInfo()">ℹ️ Test Info</button>
+            <button class="error" onclick="testSprintOverlap()">📅 Test Sprint Overlap</button>
+            <button class="warning" onclick="testActiveSprintWarning()">🏃 Test Active Sprint</button>
+        </div>
+    </div>
+
+    <script>
+        // Mock toast functions for testing
+        function showToast(type, title, message) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                min-width: 320px;
+                max-width: 400px;
+                padding: 16px;
+                border-radius: 12px;
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                font-family: Arial, sans-serif;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            `;
+
+            // Set background color based on type
+            const colors = {
+                success: 'rgba(34, 197, 94, 0.8)',
+                error: 'rgba(239, 68, 68, 0.8)',
+                warning: 'rgba(245, 158, 11, 0.8)',
+                info: 'rgba(59, 130, 246, 0.8)'
+            };
+            toast.style.background = colors[type] || colors.info;
+
+            // Set content
+            toast.innerHTML = `
+                <div style="display: flex; align-items: start; gap: 12px;">
+                    <div style="font-size: 20px;">
+                        ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">${title}</div>
+                        ${message ? `<div style="font-size: 14px; opacity: 0.9;">${message}</div>` : ''}
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="background: none; border: none; color: white; cursor: pointer; font-size: 18px; opacity: 0.7;">
+                        ✕
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 10);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        function testSuccess() {
+            showToast('success', 'Sprint Created', 'Sprint "Test Sprint" has been created successfully.');
+        }
+
+        function testError() {
+            showToast('error', 'Sprint Creation Failed', 'Failed to create sprint. Please try again.');
+        }
+
+        function testWarning() {
+            showToast('warning', 'Sprint Already Active', 'Cannot start a new sprint while "Current Sprint" is still active.');
+        }
+
+        function testInfo() {
+            showToast('info', 'Information', 'This is an informational message.');
+        }
+
+        function testSprintOverlap() {
+            showToast('error', 'Sprint Creation Failed', 'The selected dates overlap with the existing sprint "Development Sprint #2" (2026-01-15 to 2026-01-29). Please choose different dates.');
+        }
+
+        function testActiveSprintWarning() {
+            showToast('warning', 'Sprint Already Active', 'Cannot start a new sprint while "Development Sprint #3" is still active. Please complete the current sprint first.');
+        }
+    </script>
+</body>
+</html>
