@@ -41,6 +41,8 @@ import { useAppProjects } from '@/hooks/useAppProjects';
 import { useIssues, useCreateIssue, useUpdateIssue, useUpdateIssueStatus, useDeleteIssue } from '@/hooks/useIssues';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useStartSprint, useCompleteSprint, useCompletedSprintIssues } from '@/hooks/useSprints';
 import { useLabels } from '@/hooks/useLabels';
+import { useDashboardMetrics, useRecentIssues, useActiveSprintSummary, useIssueDistribution } from '@/hooks/useDashboard';
+import { useCreateComment } from '@/hooks/useComments';
 import { sprintService } from '@/services/api/sprint.service';
 import { IssueStatus } from '@/types';
 import { FrontendIssue, handleApiError } from '@/utils/api-response';
@@ -250,6 +252,9 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
     isLoading: labelsLoading 
   } = useLabels(isAuthenticated);
 
+  // Add comment mutation
+  const createCommentMutation = useCreateComment();
+
   // Convert auth user to app user format
   const user = authUser ? {
     id: authUser.id,
@@ -311,8 +316,10 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
   const addIssue = async (issueData: Partial<Issue>) => {
     try {
       await createIssueMutation.mutateAsync(issueData as any);
+      showSuccess('Issue Created', `Issue "${issueData.title}" has been created successfully.`);
     } catch (error) {
       console.error('Failed to create issue:', error);
+      showError('Issue Creation Failed', 'Failed to create issue. Please try again.');
     }
   };
 
@@ -328,44 +335,57 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
         id: parseInt(updatedIssue.id), 
         data: updatedIssue as any 
       });
+      showSuccess('Issue Updated', `Issue "${updatedIssue.title}" has been updated successfully.`);
     } catch (error) {
       console.error('Failed to update issue:', error);
       console.error('Error details:', error);
+      showError('Issue Update Failed', 'Failed to update issue. Please try again.');
     }
   };
 
   const deleteIssue = async (issueId: string) => {
     try {
+      const issue = issues.find(i => i.id === issueId);
       await deleteIssueMutation.mutateAsync(parseInt(issueId));
+      showSuccess('Issue Deleted', `Issue "${issue?.title || 'Unknown'}" has been deleted successfully.`);
     } catch (error) {
       console.error('Failed to delete issue:', error);
+      showError('Issue Deletion Failed', 'Failed to delete issue. Please try again.');
     }
   };
 
   const updateIssueStatus = async (id: string, status: IssueStatus) => {
     try {
+      const issue = issues.find(i => i.id === id);
       await updateIssueStatusMutation.mutateAsync({ 
         id: parseInt(id), 
         status 
       });
+      showSuccess('Status Updated', `Issue "${issue?.title || 'Unknown'}" status changed to ${status.toLowerCase().replace('_', ' ')}.`);
     } catch (error) {
       console.error('Failed to update issue status:', error);
+      showError('Status Update Failed', 'Failed to update issue status. Please try again.');
     }
   };
 
   const createProject = async (data: Partial<Project>) => {
     try {
       await createProjectAPI(data as any);
+      showSuccess('Project Created', `Project "${data.name}" has been created successfully.`);
     } catch (error) {
       console.error('Failed to create project:', error);
+      showError('Project Creation Failed', 'Failed to create project. Please try again.');
     }
   };
 
   const deleteProject = async (projectId: string) => {
     try {
+      const project = projects.find(p => p.id === projectId);
       await deleteProjectAPI(projectId);
+      showSuccess('Project Deleted', `Project "${project?.name || 'Unknown'}" has been deleted successfully.`);
     } catch (error) {
       console.error('Failed to delete project:', error);
+      showError('Project Deletion Failed', 'Failed to delete project. Please try again.');
     }
   };
 
@@ -453,23 +473,13 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) return;
 
     try {
-      const issue = issues.find(i => i.id === issueId);
-      if (issue) {
-        const newComment: Comment = {
-          id: generateId(),
-          issueId,
-          userId: user.id,
-          userName: user.name,
-          content,
-          createdAt: new Date().toISOString()
-        };
-
-        const currentComments = issue.comments || [];
-        await updateIssue({ 
-          ...issue, 
-          comments: [...currentComments, newComment]
-        });
-      }
+      // Use the backend comment service
+      await createCommentMutation.mutateAsync({
+        issueId: parseInt(issueId),
+        data: { content }
+      });
+      
+      // The mutation will handle cache invalidation and UI updates
     } catch (error) {
       console.error('Failed to add comment:', error);
     }
@@ -1304,7 +1314,7 @@ const CommentsSection = ({ issueId, comments = [] }: { issueId: string, comments
 };
 // --- CREATE ISSUE MODAL ---
 const CreateIssueModal = () => {
-  const { isCreateIssueModalOpen, setCreateIssueModalOpen, addIssue, projects, issues, createIssueInitialData } = useApp();
+  const { isCreateIssueModalOpen, setCreateIssueModalOpen, addIssue, projects, issues, createIssueInitialData, showError, showWarning } = useApp();
   
   const [newIssue, setNewIssue] = useState<Partial<Issue>>({
     title: '',
@@ -1340,6 +1350,14 @@ const CreateIssueModal = () => {
   const isRestrictedToStandard = !!createIssueInitialData?.parentId;
 
   const handleSave = () => {
+    if (!newIssue.title?.trim()) {
+      showError('Validation Error', 'Issue title is required');
+      return;
+    }
+    if (newIssue.type !== 'EPIC' && !newIssue.parentId) {
+      showError('Validation Error', 'Parent Epic is required for this issue type');
+      return;
+    }
     if (isFormValid) {
       addIssue(newIssue);
       setCreateIssueModalOpen(false);
@@ -1958,36 +1976,48 @@ const AuthView = () => {
 // --- DASHBOARD ---
 const Dashboard = () => {
   const { issues, sprints, projects, navigate, setSelectedIssueId, searchQuery } = useApp();
-  const activeSprint = sprints.find(s => s.status === 'ACTIVE');
+  
+  // Use backend dashboard APIs
+  const { data: dashboardMetrics, isLoading: metricsLoading } = useDashboardMetrics();
+  const { data: recentIssuesData, isLoading: recentLoading } = useRecentIssues(5);
+  const { data: activeSprintData, isLoading: sprintLoading } = useActiveSprintSummary();
+  const { data: issueDistribution, isLoading: distributionLoading } = useIssueDistribution();
 
-  // FILTRADO GLOBAL
+  // Fallback to local data if backend is not available
+  const activeSprint = activeSprintData?.sprint || sprints.find(s => s.status === 'ACTIVE');
+
+  // FILTRADO GLOBAL - keep for search functionality
   const filteredIssues = issues.filter(i => 
     i.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
     i.key.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Use backend data when available, fallback to local calculations
   const myIssues = filteredIssues.filter(i => i.status !== 'DONE').slice(0, 5);
   const activeSprintIssues = filteredIssues.filter(i => i.sprintId === activeSprint?.id);
 
-  const priorityCounts = {
+  // Use backend distribution data or calculate locally
+  const priorityCounts = issueDistribution?.byPriority || {
     CRITICAL: activeSprintIssues.filter(i => i.priority === 'CRITICAL').length,
     HIGH: activeSprintIssues.filter(i => i.priority === 'HIGH').length,
     MEDIUM: activeSprintIssues.filter(i => i.priority === 'MEDIUM').length,
     LOW: activeSprintIssues.filter(i => i.priority === 'LOW').length,
   };
 
-  const totalActiveIssues = activeSprintIssues.length || 1;
+  const totalActiveIssues = Object.values(priorityCounts).reduce((sum, count) => sum + count, 0) || 1;
 
-  const recentIssues = [...filteredIssues].sort((a, b) => {
+  // Use backend recent issues or fallback to local calculation
+  const recentIssues = recentIssuesData || [...filteredIssues].sort((a, b) => {
     const timeA = new Date(a.updatedAt || 0).getTime();
     const timeB = new Date(b.updatedAt || 0).getTime();
     return timeB - timeA;
   }).slice(0, 5);
 
+  // Use backend metrics or fallback to local calculations
   const stats = [
     { 
       label: 'Active Projects', 
-      value: projects.length, 
+      value: dashboardMetrics?.totalProjects || projects.length, 
       icon: FolderKanban, 
       color: 'text-blue-500', 
       bg: 'bg-blue-500/10',
@@ -1995,7 +2025,7 @@ const Dashboard = () => {
     },
     { 
       label: 'Current Sprint', 
-      value: activeSprint ? 'Day 4/14' : 'Inactive', 
+      value: activeSprint ? `Day ${activeSprintData?.remainingDays ? Math.max(0, 14 - activeSprintData.remainingDays) : 4}/14` : 'Inactive', 
       icon: Timer, 
       color: 'text-green-500', 
       bg: 'bg-green-500/10',
@@ -2003,13 +2033,34 @@ const Dashboard = () => {
     },
     { 
       label: 'My Tasks', 
-      value: issues.filter(i => i.status !== 'DONE').length, 
+      value: dashboardMetrics?.totalIssues || issues.filter(i => i.status !== 'DONE').length, 
       icon: CheckCircle2, 
       color: 'text-orange-500', 
       bg: 'bg-orange-500/10',
       action: () => navigate('kanban')
     },
   ];
+
+  // Show loading state if critical data is loading
+  if (metricsLoading && !dashboardMetrics) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <GlassCard key={i} className="p-6 flex items-center gap-4">
+              <div className="p-4 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse">
+                <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -2118,25 +2169,31 @@ const Dashboard = () => {
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">Recents</h3>
           </div>
           <div className="space-y-3">
-            {recentIssues.map(issue => (
-              <div 
-                key={issue.id} 
-                onClick={(e) => { e.stopPropagation(); setSelectedIssueId(issue.id); }}
-                className="group flex items-center justify-between p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className={`w-1.5 h-1.5 shrink-0 rounded-full ${
-                    issue.priority === 'CRITICAL' ? 'bg-red-500' : 
-                    issue.priority === 'HIGH' ? 'bg-orange-500' : 'bg-blue-500'
-                  }`} />
-                  <div className="truncate">
-                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{issue.title}</p>
-                    <p className="text-[10px] text-gray-500">{issue.key} • {issue.status}</p>
+            {recentIssues.map(issue => {
+              // Handle both backend Issue and frontend FrontendIssue types
+              const issueId = typeof issue.id === 'string' ? issue.id : issue.id.toString();
+              const issueKey = 'key' in issue ? issue.key : `ISS-${issue.id}`;
+              
+              return (
+                <div 
+                  key={issueId} 
+                  onClick={(e) => { e.stopPropagation(); setSelectedIssueId(issueId); }}
+                  className="group flex items-center justify-between p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`w-1.5 h-1.5 shrink-0 rounded-full ${
+                      issue.priority === 'CRITICAL' ? 'bg-red-500' : 
+                      issue.priority === 'HIGH' ? 'bg-orange-500' : 'bg-blue-500'
+                    }`} />
+                    <div className="truncate">
+                      <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{issue.title}</p>
+                      <p className="text-[10px] text-gray-500">{issueKey} • {issue.status}</p>
+                    </div>
                   </div>
+                  <ChevronRight className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <ChevronRight className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            ))}
+              );
+            })}
             {recentIssues.length === 0 && <p className="text-gray-500 text-sm italic">No recent results.</p>}
           </div>
         </GlassCard>
@@ -2146,7 +2203,7 @@ const Dashboard = () => {
 };
 // --- PROJECTS VIEW (LIST & DETAIL) ---
 const ProjectsList = () => {
-  const { projects, issues, createProject, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, searchQuery, deleteProject, showError } = useApp();
+  const { projects, issues, createProject, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, searchQuery, deleteProject, showError, showWarning } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [newProj, setNewProj] = useState({ name: '', key: '', description: '' });
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -2180,6 +2237,13 @@ const ProjectsList = () => {
       setCreateIssueModalOpen(true);
       setCreationWizardStep('NONE');
     } else {
+      // Check if there are epics available for this project
+      const projectEpics = issues.filter(i => i.type === 'EPIC' && i.projectId === selectedProjectId);
+      if (projectEpics.length === 0) {
+        showWarning('No Epics Available', 'You need to create an Epic first before creating standard issues. Please create an Epic or select "Epic" as the issue type.');
+        setCreationWizardStep('NONE');
+        return;
+      }
       setCreationWizardStep('PARENT');
     }
   };
