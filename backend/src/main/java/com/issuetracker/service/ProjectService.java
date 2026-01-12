@@ -3,7 +3,10 @@ package com.issuetracker.service;
 import com.issuetracker.dto.CreateProjectRequest;
 import com.issuetracker.dto.ProjectDto;
 import com.issuetracker.dto.UpdateProjectRequest;
+import com.issuetracker.entity.Issue;
+import com.issuetracker.entity.IssueStatus;
 import com.issuetracker.entity.Project;
+import com.issuetracker.entity.ProjectStatus;
 import com.issuetracker.entity.User;
 import com.issuetracker.exception.DuplicateResourceException;
 import com.issuetracker.exception.ResourceNotFoundException;
@@ -229,6 +232,7 @@ public class ProjectService {
                 project.getName(),
                 project.getKey(),
                 project.getDescription(),
+                project.getStatus(),
                 project.getCreatedAt(),
                 project.getUpdatedAt()
         );
@@ -238,5 +242,76 @@ public class ProjectService {
         dto.setIssueCount(issueCount);
 
         return dto;
+    }
+
+    /**
+     * Updates project status based on epic completion status.
+     * This method is called whenever an epic status is updated.
+     * 
+     * Rules:
+     * - If ALL epics in a project are DONE → Project becomes DONE
+     * - If ANY epic in a project is NOT DONE → Project becomes IN_PROGRESS
+     *
+     * @param project the project to check and update
+     * @param user the user performing the operation
+     */
+    public void updateProjectStatusIfNeeded(Project project, User user) {
+        logger.info("🔍 Checking if project '{}' (ID: {}) should update status based on epic completion", 
+                   project.getName(), project.getId());
+
+        // Get all epic issues in this project (issues with no parent)
+        List<Issue> epics = issueRepository.findByUserAndProjectAndParentIssueIsNullOrderByCreatedAtDesc(user, project);
+        
+        if (epics.isEmpty()) {
+            logger.info("📋 Project '{}' has no epics, keeping status as IN_PROGRESS", project.getName());
+            if (project.getStatus() != ProjectStatus.IN_PROGRESS) {
+                project.setStatus(ProjectStatus.IN_PROGRESS);
+                projectRepository.save(project);
+                logger.info("🔄 Project '{}' (ID: {}) status changed to IN_PROGRESS - no epics", 
+                           project.getName(), project.getId());
+            }
+            return;
+        }
+
+        // Check if all epics are effectively "complete"
+        // An epic is considered complete if:
+        // 1. It has children and all children are DONE (epic auto-completes to DONE)
+        // 2. It has no children but is manually set to DONE
+        // 3. It has no children and is still in BACKLOG (considered neutral - doesn't block project completion)
+        boolean allEpicsComplete = epics.stream()
+                .allMatch(epic -> {
+                    if (epic.getStatus() == IssueStatus.DONE) {
+                        return true; // Epic is explicitly DONE
+                    }
+                    // If epic has no children, it doesn't block project completion
+                    List<Issue> children = issueRepository.findByParentIssueAndUserOrderByCreatedAtDesc(epic, user);
+                    return children.isEmpty();
+                });
+
+        if (allEpicsComplete && project.getStatus() != ProjectStatus.DONE) {
+            logger.info("✅ All epics in project '{}' are complete (DONE or have no children), marking project as DONE", project.getName());
+            
+            project.setStatus(ProjectStatus.DONE);
+            projectRepository.save(project);
+            
+            logger.info("🎉 Project '{}' (ID: {}) automatically completed - all {} epics are complete", 
+                       project.getName(), project.getId(), epics.size());
+        } else if (!allEpicsComplete && project.getStatus() == ProjectStatus.DONE) {
+            logger.info("🔄 Project '{}' has incomplete epics, reverting from DONE to IN_PROGRESS", project.getName());
+            
+            project.setStatus(ProjectStatus.IN_PROGRESS);
+            projectRepository.save(project);
+            
+            logger.info("🔄 Project '{}' (ID: {}) reverted to IN_PROGRESS - has incomplete epics", 
+                       project.getName(), project.getId());
+        } else {
+            long doneEpics = epics.stream().mapToLong(epic -> epic.getStatus() == IssueStatus.DONE ? 1 : 0).sum();
+            long epicsWithoutChildren = epics.stream().mapToLong(epic -> {
+                List<Issue> children = issueRepository.findByParentIssueAndUserOrderByCreatedAtDesc(epic, user);
+                return children.isEmpty() ? 1 : 0;
+            }).sum();
+            logger.info("📊 Project '{}' status unchanged - {} DONE epics, {} epics without children, {} total epics", 
+                       project.getName(), doneEpics, epicsWithoutChildren, epics.size());
+        }
     }
 }

@@ -90,7 +90,8 @@ export const useCreateSprint = () => {
     },
     onError: (error) => {
       console.error('Failed to create sprint:', error);
-      throw new Error(handleApiError(error));
+      // Don't process the error here, let the component handle it
+      // The error will be processed by handleApiError in the component
     },
   });
 };

@@ -246,6 +246,24 @@ export const handleApiError = (error: any): string => {
     // Handle specific error cases with clear English messages
     switch (status) {
       case 400:
+        // Sprint-specific errors
+        if (message.includes('sprint dates overlap') || message.includes('overlap with existing sprint')) {
+          // Extract sprint name and dates from the error message if available
+          const sprintMatch = message.match(/existing sprint '([^']+)' \(([^)]+)\)/);
+          if (sprintMatch) {
+            const [, sprintName, sprintDates] = sprintMatch;
+            return `The selected dates overlap with the existing sprint "${sprintName}" (${sprintDates}). Please choose different dates.`;
+          }
+          return 'The selected dates overlap with an existing active or planned sprint. Please choose different dates.';
+        }
+        if (message.includes('start date') && message.includes('end date')) {
+          return 'Invalid sprint dates. Please ensure the end date is after the start date and dates are not in the past.';
+        }
+        if (message.includes('another sprint is already active')) {
+          return 'Cannot start sprint while another sprint is active. Please complete the current sprint first.';
+        }
+        
+        // General validation errors
         if (message.includes('email') && message.includes('invalid')) {
           return 'Please enter a valid email address.';
         }

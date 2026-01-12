@@ -46,6 +46,10 @@ public class Project {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProjectStatus status = ProjectStatus.IN_PROGRESS;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -69,6 +73,7 @@ public class Project {
         this.name = name;
         this.key = key;
         this.description = description;
+        this.status = ProjectStatus.IN_PROGRESS;
     }
 
     // Getters and Setters
@@ -110,6 +115,14 @@ public class Project {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public ProjectStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ProjectStatus status) {
+        this.status = status;
     }
 
     public Instant getCreatedAt() {
@@ -165,6 +178,7 @@ public class Project {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", key='" + key + '\'' +
+                ", status=" + status +
                 ", createdAt=" + createdAt +
                 '}';
     }

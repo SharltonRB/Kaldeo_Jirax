@@ -32,6 +32,7 @@ public class IssueService {
     private final LabelRepository labelRepository;
     private final CommentRepository commentRepository;
     private final AuditService auditService;
+    private final ProjectService projectService;
 
     public IssueService(IssueRepository issueRepository, 
                        ProjectRepository projectRepository,
@@ -39,7 +40,8 @@ public class IssueService {
                        SprintRepository sprintRepository,
                        LabelRepository labelRepository,
                        CommentRepository commentRepository,
-                       AuditService auditService) {
+                       AuditService auditService,
+                       ProjectService projectService) {
         this.issueRepository = issueRepository;
         this.projectRepository = projectRepository;
         this.issueTypeRepository = issueTypeRepository;
@@ -47,6 +49,7 @@ public class IssueService {
         this.labelRepository = labelRepository;
         this.commentRepository = commentRepository;
         this.auditService = auditService;
+        this.projectService = projectService;
     }
 
     /**
@@ -238,6 +241,9 @@ public class IssueService {
         // Create audit log for status change
         auditService.logStatusChange(updatedIssue, user, oldStatus, newStatus);
 
+        // Check if this issue has a parent epic and update epic status if needed
+        updateParentEpicStatusIfNeeded(updatedIssue, user);
+
         logger.info("✅ Status updated for '{}' (ID: {}) from {} to {} by user: {}", 
                    updatedIssue.getTitle(), updatedIssue.getId(), oldStatus, newStatus, user.getEmail());
 
@@ -346,21 +352,22 @@ public class IssueService {
      * @param to target status
      * @return true if transition is valid
      */
+    /**
+     * Validates workflow transitions between issue statuses.
+     * NEW RULE: Any issue can transition from any status to any other status directly.
+     * No step-by-step workflow restrictions.
+     *
+     * @param from the current status
+     * @param to the target status
+     * @return true if transition is valid (always true now, except for same status optimization)
+     */
     private boolean isValidTransition(IssueStatus from, IssueStatus to) {
         if (from == to) {
             return true; // Same status is always valid
         }
 
-        return switch (from) {
-            case BACKLOG -> to == IssueStatus.SELECTED_FOR_DEVELOPMENT;
-            case SELECTED_FOR_DEVELOPMENT -> to == IssueStatus.IN_PROGRESS || 
-                                           to == IssueStatus.BACKLOG;
-            case IN_PROGRESS -> to == IssueStatus.IN_REVIEW || 
-                              to == IssueStatus.SELECTED_FOR_DEVELOPMENT;
-            case IN_REVIEW -> to == IssueStatus.DONE || 
-                            to == IssueStatus.IN_PROGRESS;
-            case DONE -> to == IssueStatus.IN_REVIEW;
-        };
+        // NEW RULE: Allow any transition from any status to any other status
+        return true;
     }
 
     /**
@@ -629,5 +636,79 @@ public class IssueService {
         long totalChildIssues = issueRepository.countByUserAndParentIssueIsNotNull(user);
 
         return new EpicStatisticsDto(totalEpics, totalChildIssues);
+    }
+
+    /**
+     * Updates the parent epic status if all child issues are completed.
+     * This method is called whenever a child issue status is updated.
+     *
+     * @param childIssue the child issue that was updated
+     * @param user the user performing the operation
+     */
+    private void updateParentEpicStatusIfNeeded(Issue childIssue, User user) {
+        // Only proceed if this issue has a parent (is a child of an epic)
+        if (childIssue.getParentIssue() == null) {
+            return;
+        }
+
+        Issue parentEpic = childIssue.getParentIssue();
+        
+        // Only proceed if the parent is actually an epic
+        if (!parentEpic.isEpic()) {
+            return;
+        }
+
+        logger.info("🔍 Checking if epic '{}' (ID: {}) should be auto-completed", 
+                   parentEpic.getTitle(), parentEpic.getId());
+
+        // Get all child issues of this epic
+        List<Issue> childIssues = issueRepository.findByParentIssueAndUserOrderByCreatedAtDesc(parentEpic, user);
+        
+        if (childIssues.isEmpty()) {
+            logger.info("📋 Epic '{}' has no child issues, skipping auto-completion", parentEpic.getTitle());
+            return;
+        }
+
+        // Check if all child issues are DONE
+        boolean allChildrenDone = childIssues.stream()
+                .allMatch(child -> child.getStatus() == IssueStatus.DONE);
+
+        if (allChildrenDone && parentEpic.getStatus() != IssueStatus.DONE) {
+            logger.info("✅ All child issues of epic '{}' are DONE, auto-completing epic", parentEpic.getTitle());
+            
+            IssueStatus oldEpicStatus = parentEpic.getStatus();
+            parentEpic.setStatus(IssueStatus.DONE);
+            issueRepository.save(parentEpic);
+
+            // Create audit log for the epic status change
+            auditService.logStatusChange(parentEpic, user, oldEpicStatus, IssueStatus.DONE);
+            
+            logger.info("🎉 Epic '{}' (ID: {}) automatically completed - all {} child issues are DONE", 
+                       parentEpic.getTitle(), parentEpic.getId(), childIssues.size());
+            
+            // Update project status if needed since an epic status changed
+            projectService.updateProjectStatusIfNeeded(parentEpic.getProject(), user);
+        } else if (!allChildrenDone && parentEpic.getStatus() == IssueStatus.DONE) {
+            // If the epic was DONE but now has incomplete children, revert it to IN_PROGRESS
+            logger.info("🔄 Epic '{}' has incomplete child issues, reverting from DONE to IN_PROGRESS", parentEpic.getTitle());
+            
+            IssueStatus oldEpicStatus = parentEpic.getStatus();
+            parentEpic.setStatus(IssueStatus.IN_PROGRESS);
+            issueRepository.save(parentEpic);
+
+            // Create audit log for the epic status change
+            auditService.logStatusChange(parentEpic, user, oldEpicStatus, IssueStatus.IN_PROGRESS);
+            
+            logger.info("🔄 Epic '{}' (ID: {}) reverted to IN_PROGRESS - has incomplete child issues", 
+                       parentEpic.getTitle(), parentEpic.getId());
+            
+            // Update project status if needed since an epic status changed
+            projectService.updateProjectStatusIfNeeded(parentEpic.getProject(), user);
+        } else {
+            logger.info("📊 Epic '{}' status unchanged - {} of {} child issues are DONE", 
+                       parentEpic.getTitle(), 
+                       childIssues.stream().mapToInt(child -> child.getStatus() == IssueStatus.DONE ? 1 : 0).sum(),
+                       childIssues.size());
+        }
     }
 }

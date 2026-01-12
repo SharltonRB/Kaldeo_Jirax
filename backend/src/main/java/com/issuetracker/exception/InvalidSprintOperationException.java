@@ -32,4 +32,11 @@ public class InvalidSprintOperationException extends RuntimeException {
     public static InvalidSprintOperationException overlappingSprints() {
         return new InvalidSprintOperationException("Sprint dates overlap with existing sprint");
     }
+
+    public static InvalidSprintOperationException overlappingSprints(String conflictingSprintName, String conflictingSprintDates) {
+        return new InvalidSprintOperationException(
+            String.format("Sprint dates overlap with existing sprint '%s' (%s)", 
+                conflictingSprintName, conflictingSprintDates)
+        );
+    }
 }

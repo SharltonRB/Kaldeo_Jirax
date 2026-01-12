@@ -84,6 +84,7 @@ public interface SprintRepository extends JpaRepository<Sprint, Long> {
 
     /**
      * Finds overlapping sprints for a user (for validation).
+     * Only considers ACTIVE and PLANNED sprints, as COMPLETED sprints should not block new sprint creation.
      *
      * @param user the sprint owner
      * @param startDate new sprint start date
@@ -93,6 +94,7 @@ public interface SprintRepository extends JpaRepository<Sprint, Long> {
      */
     @Query("SELECT s FROM Sprint s WHERE s.user = :user AND " +
            "(:excludeId IS NULL OR s.id != :excludeId) AND " +
+           "s.status IN ('ACTIVE', 'PLANNED') AND " +
            "((s.startDate < :endDate AND s.endDate > :startDate))")
     List<Sprint> findOverlappingSprints(@Param("user") User user,
                                        @Param("startDate") LocalDate startDate,

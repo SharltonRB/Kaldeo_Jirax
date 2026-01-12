@@ -36,13 +36,14 @@ Archive,
 Eye,
 EyeOff} from 'lucide-react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { ToastProvider, useToast } from '@/context/ToastContext';
 import { useAppProjects } from '@/hooks/useAppProjects';
 import { useIssues, useCreateIssue, useUpdateIssue, useUpdateIssueStatus, useDeleteIssue } from '@/hooks/useIssues';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useStartSprint, useCompleteSprint, useCompletedSprintIssues } from '@/hooks/useSprints';
 import { useLabels } from '@/hooks/useLabels';
 import { sprintService } from '@/services/api/sprint.service';
 import { IssueStatus } from '@/types';
-import { FrontendIssue } from '@/utils/api-response';
+import { FrontendIssue, handleApiError } from '@/utils/api-response';
 import SprintCalendar from '@/components/ui/SprintCalendar';
 
 /***
@@ -179,6 +180,10 @@ interface AppContextType extends AppState {
   navigateToIssue: (id: string) => void;
   goBackIssue: () => void;
   refetchIssues: () => Promise<any>;
+  // Notification functions
+  showSuccess: (title: string, message?: string) => void;
+  showError: (title: string, message?: string) => void;
+  showWarning: (title: string, message?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -190,6 +195,7 @@ const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user: authUser, logout: authLogout } = useAuth();
+  const { showSuccess, showError, showWarning } = useToast();
   const [theme, setTheme] = useState<'light' | 'dark'>('light'); 
   const [currentView, setCurrentView] = useState<AppState['currentView']>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -366,8 +372,11 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
   const createSprint = async (data: Partial<Sprint>) => {
     try {
       await createSprintMutation.mutateAsync(data as any);
-    } catch (error) {
+      showSuccess('Sprint Created', `Sprint "${data.name}" has been created successfully.`);
+    } catch (error: any) {
       console.error('Failed to create sprint:', error);
+      const errorMessage = handleApiError(error);
+      showError('Sprint Creation Failed', errorMessage);
     }
   };
 
@@ -377,16 +386,22 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
         id: parseInt(updatedSprint.id), 
         data: updatedSprint as any 
       });
-    } catch (error) {
+      showSuccess('Sprint Updated', `Sprint "${updatedSprint.name}" has been updated successfully.`);
+    } catch (error: any) {
       console.error('Failed to update sprint:', error);
+      const errorMessage = error.message || 'Failed to update sprint. Please try again.';
+      showError('Sprint Update Failed', errorMessage);
     }
   };
 
   const deleteSprint = async (sprintId: string) => {
     try {
       await deleteSprintMutation.mutateAsync(parseInt(sprintId));
-    } catch (error) {
+      showSuccess('Sprint Deleted', 'Sprint has been deleted successfully.');
+    } catch (error: any) {
       console.error('Failed to delete sprint:', error);
+      const errorMessage = error.message || 'Failed to delete sprint. Please try again.';
+      showError('Sprint Deletion Failed', errorMessage);
     }
   };
 
@@ -407,8 +422,12 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       
       await startSprintMutation.mutateAsync(params);
-    } catch (error) {
+      const sprintName = sprints.find(s => s.id === sprintId)?.name || 'Sprint';
+      showSuccess('Sprint Started', `${sprintName} has been activated successfully.`);
+    } catch (error: any) {
       console.error('Failed to start sprint:', error);
+      const errorMessage = error.message || 'Failed to start sprint. Please try again.';
+      showError('Sprint Activation Failed', errorMessage);
     }
   };
 
@@ -420,10 +439,13 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
       // Refresh issues to reflect the changes
       await refetchIssues();
       
-      console.log(`Sprint ${sprintId} completed successfully.`);
+      const sprintName = sprints.find(s => s.id === sprintId)?.name || 'Sprint';
+      showSuccess('Sprint Completed', `${sprintName} has been completed successfully. Incomplete issues moved to backlog.`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to complete sprint:', error);
+      const errorMessage = error.message || 'Failed to complete sprint. Please try again.';
+      showError('Sprint Completion Failed', errorMessage);
     }
   };
 
@@ -463,7 +485,8 @@ const AppProviderContent: React.FC<{ children: React.ReactNode }> = ({ children 
       navigateToIssue, goBackIssue,
       addIssue, updateIssue, deleteIssue, updateIssueStatus, 
       createProject, deleteProject, createSprint, updateSprint, deleteSprint, 
-      addComment, completeSprint, startSprint, refetchIssues
+      addComment, completeSprint, startSprint, refetchIssues,
+      showSuccess, showError, showWarning
     }}>
       {children}
     </AppContext.Provider>
@@ -1502,7 +1525,7 @@ const PrioritySelector = ({ value, onChange }: { value: IssuePriority, onChange:
 };
 // --- ISSUE DETAIL MODAL (EDITING) ---
 const IssueDetailModal = () => {
-  const { selectedIssueId, issues, sprints, setSelectedIssueId, updateIssue, updateIssueStatus, deleteIssue, issueHistory, goBackIssue, navigateToIssue } = useApp();
+  const { selectedIssueId, issues, sprints, setSelectedIssueId, updateIssue, updateIssueStatus, deleteIssue, issueHistory, goBackIssue, navigateToIssue, showError } = useApp();
   const [formData, setFormData] = useState<Issue | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -1546,7 +1569,7 @@ const IssueDetailModal = () => {
   const handleSave = async () => {
     if (formData) {
       if (isParentRequired && !formData.parentId) {
-        alert("Este tipo de issue debe pertenecer a una Épica.");
+        showError("Epic Required", "This type of issue must belong to an Epic.");
         return;
       }
       
@@ -1554,7 +1577,7 @@ const IssueDetailModal = () => {
       if (formData.parentId) {
         const selectedEpic = issues.find(i => i.id === formData.parentId);
         if (selectedEpic && String(selectedEpic.projectId) !== String(formData.projectId)) {
-          alert(`Error: El Epic seleccionado pertenece a un proyecto diferente.`);
+          showError("Invalid Epic", "The selected Epic belongs to a different project.");
           return;
         }
       }
@@ -2123,7 +2146,7 @@ const Dashboard = () => {
 };
 // --- PROJECTS VIEW (LIST & DETAIL) ---
 const ProjectsList = () => {
-  const { projects, issues, createProject, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, searchQuery, deleteProject } = useApp();
+  const { projects, issues, createProject, setSelectedIssueId, setCreateIssueModalOpen, setCreateIssueInitialData, searchQuery, deleteProject, showError } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [newProj, setNewProj] = useState({ name: '', key: '', description: '' });
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -2595,19 +2618,19 @@ const ProjectsList = () => {
                   onClick={() => { 
                     // Validate before creating
                     if (!newProj.name.trim()) {
-                      alert('Project name is required');
+                      showError('Validation Error', 'Project name is required');
                       return;
                     }
                     if (!newProj.key.trim()) {
-                      alert('Project key is required');
+                      showError('Validation Error', 'Project key is required');
                       return;
                     }
                     if (newProj.key.length < 2) {
-                      alert('Project key must be at least 2 characters long');
+                      showError('Validation Error', 'Project key must be at least 2 characters long');
                       return;
                     }
                     if (!/^[A-Z][A-Z0-9_-]*$/.test(newProj.key)) {
-                      alert('Project key must start with a letter and contain only uppercase letters, numbers, underscores, and hyphens');
+                      showError('Validation Error', 'Project key must start with a letter and contain only uppercase letters, numbers, underscores, and hyphens');
                       return;
                     }
                     
@@ -2808,7 +2831,7 @@ const CompletedSprintViewModal = ({ isOpen, onClose, sprint, onIssueClick, onDel
 
 // --- SPRINT MANAGEMENT LIST ---
 const SprintsList = () => {
-  const { sprints, createSprint, updateSprint, navigate, issues, setSelectedIssueId, updateIssue, startSprint, deleteSprint, refetchIssues } = useApp();
+  const { sprints, createSprint, updateSprint, navigate, issues, setSelectedIssueId, updateIssue, startSprint, deleteSprint, refetchIssues, showWarning } = useApp();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
   const [viewingCompletedSprint, setViewingCompletedSprint] = useState<Sprint | null>(null);
@@ -2879,7 +2902,7 @@ const SprintsList = () => {
     // Check if there's already an active sprint
     const activeSprint = sprints.find(sprint => sprint.status === 'ACTIVE');
     if (activeSprint) {
-      alert(`Cannot start a new sprint while "${activeSprint.name}" is still active. Please complete the current sprint first.`);
+      showWarning('Sprint Already Active', `Cannot start a new sprint while "${activeSprint.name}" is still active. Please complete the current sprint first.`);
       return;
     }
 
@@ -2902,7 +2925,7 @@ const SprintsList = () => {
     // Check if there's already an active sprint
     const activeSprint = sprints.find(sprint => sprint.status === 'ACTIVE');
     if (activeSprint) {
-      alert(`Cannot start a new sprint while "${activeSprint.name}" is still active. Please complete the current sprint first.`);
+      showWarning('Sprint Already Active', `Cannot start a new sprint while "${activeSprint.name}" is still active. Please complete the current sprint first.`);
       setShowActivationModal(false);
       return;
     }
@@ -3774,9 +3797,11 @@ const AppContent = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+      <ToastProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }

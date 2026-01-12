@@ -51,10 +51,9 @@ public class IssueWorkflowPropertyTest extends BasePostgreSQLTest {
     private IssueTypeRepository issueTypeRepository;
 
     /**
-     * Property 5: Issue Workflow Integrity
-     * For any issue status transition, the system should only allow valid workflow 
-     * progressions (BACKLOG → SELECTED_FOR_DEVELOPMENT → IN_PROGRESS → IN_REVIEW → DONE) 
-     * and record all changes in the audit trail.
+     * Property 5: Issue Workflow Integrity (UPDATED)
+     * NEW RULE: Any issue can transition from any status to any other status directly.
+     * The system should allow all status transitions and record all changes in the audit trail.
      * 
      * Validates: Requirements 3.3, 7.1
      */
@@ -64,7 +63,7 @@ public class IssueWorkflowPropertyTest extends BasePostgreSQLTest {
             userGenerator(),
             projectDataGenerator(),
             issueDataGenerator(),
-            validWorkflowTransitionGenerator()
+            anyStatusTransitionGenerator() // Updated to allow any transition
         ).checkAssert((user, projectData, issueData, transition) -> {
             try {
                 // Persist user without flush
@@ -141,15 +140,16 @@ public class IssueWorkflowPropertyTest extends BasePostgreSQLTest {
     }
 
     /**
-     * Test invalid workflow transitions are rejected.
+     * Test that all workflow transitions are now allowed (NEW RULE).
+     * Previously this tested invalid transitions, but now all transitions are valid.
      */
     @Test
-    void invalidWorkflowTransitionsRejectedProperty() {
+    void allWorkflowTransitionsAllowedProperty() {
         qt.forAll(
             userGenerator(),
             projectDataGenerator(),
             issueDataGenerator(),
-            invalidWorkflowTransitionGenerator()
+            anyStatusTransitionGenerator() // Use any transition generator
         ).checkAssert((user, projectData, issueData, transition) -> {
             try {
                 // Persist user without flush
@@ -187,17 +187,21 @@ public class IssueWorkflowPropertyTest extends BasePostgreSQLTest {
                 
                 // Set issue to the 'from' status first (if not already BACKLOG)
                 if (transition.from != IssueStatus.BACKLOG) {
-                    navigateToStatus(createdIssue.getId(), transition.from, savedUser);
+                    // NEW RULE: Can transition directly to any status
+                    StatusUpdateRequest directStatusRequest = new StatusUpdateRequest(transition.from);
+                    issueService.updateIssueStatus(createdIssue.getId(), directStatusRequest, savedUser);
                 }
                 
-                // Attempt invalid transition - should throw exception
+                // Attempt transition - should now succeed (NEW RULE: all transitions allowed)
                 StatusUpdateRequest statusRequest = new StatusUpdateRequest(transition.to);
-                assertThatThrownBy(() -> issueService.updateIssueStatus(createdIssue.getId(), statusRequest, savedUser))
-                    .isInstanceOf(InvalidWorkflowTransitionException.class);
+                IssueDto updatedIssue = issueService.updateIssueStatus(createdIssue.getId(), statusRequest, savedUser);
                 
-                // Verify issue status hasn't changed
-                IssueDto unchangedIssue = issueService.getIssue(createdIssue.getId(), savedUser);
-                assertThat(unchangedIssue.getStatus()).isEqualTo(transition.from);
+                // Verify issue status has changed to the target status
+                assertThat(updatedIssue.getStatus()).isEqualTo(transition.to);
+                
+                // Verify the change is persisted
+                IssueDto persistedIssue = issueService.getIssue(createdIssue.getId(), savedUser);
+                assertThat(persistedIssue.getStatus()).isEqualTo(transition.to);
             } catch (Exception e) {
                 // If we get a session management error or constraint violation, just skip this test iteration
                 if (e.getCause() instanceof org.hibernate.AssertionFailure ||
@@ -369,40 +373,43 @@ public class IssueWorkflowPropertyTest extends BasePostgreSQLTest {
                  });
     }
 
-    private Gen<WorkflowTransition> validWorkflowTransitionGenerator() {
-        List<WorkflowTransition> validTransitions = Arrays.asList(
-            new WorkflowTransition(IssueStatus.BACKLOG, IssueStatus.SELECTED_FOR_DEVELOPMENT),
-            new WorkflowTransition(IssueStatus.SELECTED_FOR_DEVELOPMENT, IssueStatus.IN_PROGRESS),
-            new WorkflowTransition(IssueStatus.SELECTED_FOR_DEVELOPMENT, IssueStatus.BACKLOG),
-            new WorkflowTransition(IssueStatus.IN_PROGRESS, IssueStatus.IN_REVIEW),
-            new WorkflowTransition(IssueStatus.IN_PROGRESS, IssueStatus.SELECTED_FOR_DEVELOPMENT),
-            new WorkflowTransition(IssueStatus.IN_REVIEW, IssueStatus.DONE),
-            new WorkflowTransition(IssueStatus.IN_REVIEW, IssueStatus.IN_PROGRESS),
-            new WorkflowTransition(IssueStatus.DONE, IssueStatus.IN_REVIEW)
+    /**
+     * NEW RULE: Generate any status transition since all transitions are now valid
+     */
+    private Gen<WorkflowTransition> anyStatusTransitionGenerator() {
+        List<IssueStatus> allStatuses = Arrays.asList(
+            IssueStatus.BACKLOG,
+            IssueStatus.SELECTED_FOR_DEVELOPMENT,
+            IssueStatus.IN_PROGRESS,
+            IssueStatus.IN_REVIEW,
+            IssueStatus.DONE
         );
         
-        return integers().between(0, validTransitions.size() - 1)
-                .map(validTransitions::get);
+        return integers().between(0, allStatuses.size() - 1)
+                .flatMap(fromIndex -> 
+                    integers().between(0, allStatuses.size() - 1)
+                        .map(toIndex -> new WorkflowTransition(allStatuses.get(fromIndex), allStatuses.get(toIndex)))
+                );
     }
 
+    /**
+     * DEPRECATED: All transitions are now valid, so this generator is no longer needed
+     * Keeping for backwards compatibility but it will generate empty list
+     */
+    private Gen<WorkflowTransition> validWorkflowTransitionGenerator() {
+        // NEW RULE: All transitions are valid, so return any transition
+        return anyStatusTransitionGenerator();
+    }
+
+    /**
+     * DEPRECATED: All transitions are now valid, so there are no invalid transitions
+     * This method now returns an empty list since no transitions are invalid
+     */
     private Gen<WorkflowTransition> invalidWorkflowTransitionGenerator() {
-        List<WorkflowTransition> invalidTransitions = Arrays.asList(
-            new WorkflowTransition(IssueStatus.BACKLOG, IssueStatus.IN_PROGRESS),
-            new WorkflowTransition(IssueStatus.BACKLOG, IssueStatus.IN_REVIEW),
-            new WorkflowTransition(IssueStatus.BACKLOG, IssueStatus.DONE),
-            new WorkflowTransition(IssueStatus.SELECTED_FOR_DEVELOPMENT, IssueStatus.IN_REVIEW),
-            new WorkflowTransition(IssueStatus.SELECTED_FOR_DEVELOPMENT, IssueStatus.DONE),
-            new WorkflowTransition(IssueStatus.IN_PROGRESS, IssueStatus.BACKLOG),
-            new WorkflowTransition(IssueStatus.IN_PROGRESS, IssueStatus.DONE),
-            new WorkflowTransition(IssueStatus.IN_REVIEW, IssueStatus.BACKLOG),
-            new WorkflowTransition(IssueStatus.IN_REVIEW, IssueStatus.SELECTED_FOR_DEVELOPMENT),
-            new WorkflowTransition(IssueStatus.DONE, IssueStatus.BACKLOG),
-            new WorkflowTransition(IssueStatus.DONE, IssueStatus.SELECTED_FOR_DEVELOPMENT),
-            new WorkflowTransition(IssueStatus.DONE, IssueStatus.IN_PROGRESS)
-        );
-        
-        return integers().between(0, invalidTransitions.size() - 1)
-                .map(invalidTransitions::get);
+        // NEW RULE: No transitions are invalid anymore, return a dummy transition
+        // This test should be updated or removed since it's no longer relevant
+        return integers().between(0, 0)
+                .map(i -> new WorkflowTransition(IssueStatus.BACKLOG, IssueStatus.BACKLOG)); // Same status transition (always valid)
     }
 
     // Helper classes for test data

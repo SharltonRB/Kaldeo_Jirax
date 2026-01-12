@@ -1,6 +1,7 @@
 package com.issuetracker.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.issuetracker.entity.ProjectStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -25,6 +26,8 @@ public class ProjectDto {
     @Size(max = 1000, message = "Description must not exceed 1000 characters")
     private String description;
 
+    private ProjectStatus status;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private Instant createdAt;
 
@@ -36,11 +39,12 @@ public class ProjectDto {
     // Constructors
     public ProjectDto() {}
 
-    public ProjectDto(Long id, String name, String key, String description, Instant createdAt, Instant updatedAt) {
+    public ProjectDto(Long id, String name, String key, String description, ProjectStatus status, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.name = name;
         this.key = key;
         this.description = description;
+        this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -78,6 +82,14 @@ public class ProjectDto {
         this.description = description;
     }
 
+    public ProjectStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ProjectStatus status) {
+        this.status = status;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -108,6 +120,7 @@ public class ProjectDto {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", key='" + key + '\'' +
+                ", status=" + status +
                 ", issueCount=" + issueCount +
                 '}';
     }
@@ -121,6 +134,7 @@ public class ProjectDto {
                java.util.Objects.equals(name, that.name) &&
                java.util.Objects.equals(key, that.key) &&
                java.util.Objects.equals(description, that.description) &&
+               java.util.Objects.equals(status, that.status) &&
                java.util.Objects.equals(createdAt, that.createdAt) &&
                java.util.Objects.equals(updatedAt, that.updatedAt) &&
                java.util.Objects.equals(issueCount, that.issueCount);
@@ -128,6 +142,6 @@ public class ProjectDto {
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(id, name, key, description, createdAt, updatedAt, issueCount);
+        return java.util.Objects.hash(id, name, key, description, status, createdAt, updatedAt, issueCount);
     }
 }

@@ -60,7 +60,10 @@ public class SprintService {
                 user, request.getStartDate(), request.getEndDate(), null);
         if (!overlappingSprints.isEmpty()) {
             logger.warn("❌ Sprint creation failed - overlapping dates for user: {}", user.getEmail());
-            throw InvalidSprintOperationException.overlappingSprints();
+            Sprint conflictingSprint = overlappingSprints.get(0);
+            String conflictingDates = conflictingSprint.getStartDate() + " to " + conflictingSprint.getEndDate();
+            throw InvalidSprintOperationException.overlappingSprints(
+                conflictingSprint.getName(), conflictingDates);
         }
 
         // Create sprint
@@ -96,7 +99,10 @@ public class SprintService {
         List<Sprint> overlappingSprints = sprintRepository.findOverlappingSprints(
                 user, request.getStartDate(), request.getEndDate(), sprintId);
         if (!overlappingSprints.isEmpty()) {
-            throw InvalidSprintOperationException.overlappingSprints();
+            Sprint conflictingSprint = overlappingSprints.get(0);
+            String conflictingDates = conflictingSprint.getStartDate() + " to " + conflictingSprint.getEndDate();
+            throw InvalidSprintOperationException.overlappingSprints(
+                conflictingSprint.getName(), conflictingDates);
         }
 
         // Update sprint fields

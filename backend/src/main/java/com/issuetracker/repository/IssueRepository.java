@@ -305,4 +305,13 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
      * @return count of non-epic issues
      */
     long countByUserAndParentIssueIsNotNull(User user);
+
+    /**
+     * Finds epic issues (issues without parent) for a specific project and user.
+     *
+     * @param user the issue owner
+     * @param project the project
+     * @return list of epic issues in the project
+     */
+    List<Issue> findByUserAndProjectAndParentIssueIsNullOrderByCreatedAtDesc(User user, Project project);
 }
