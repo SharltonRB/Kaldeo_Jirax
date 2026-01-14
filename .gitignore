@@ -146,8 +146,10 @@ mongodb_data/
 # Docker override files
 docker-compose.override.yml
 docker-compose.local.yml
-docker-compose.prod.yml
 docker-compose.*.local.yml
+
+# Keep production docker-compose
+!docker-compose.prod.yml
 
 # Kubernetes secrets
 infrastructure/k8s/secrets/
@@ -174,9 +176,19 @@ infrastructure/terraform/*_override.tf.json
 .env
 .env.*
 !.env.example
+!.env.*.example
+!.env.*.template
+!.env.prod.example
 *.env
+!*.env.example
+!*.env.template
 !frontend/.env.example
 !backend/.env.example
+!backend/.env.prod.template
+
+# Specifically ignore production env file with real secrets
+.env.prod
+.env.production
 
 # Configuration files with secrets
 environment.properties
@@ -388,6 +400,7 @@ gradle-app.setting
 .cache/
 cache/
 tmp/
+temp/
 
 # Personal notes and documentation
 TODO.md
@@ -411,6 +424,10 @@ profiler/
 docs/generated/
 javadoc/
 
+# Temporary directories
+~/
+~Desktop/
+
 # ================================
 # KIRO IDE CONFIGURATION
 # ================================
@@ -432,12 +449,7 @@ javadoc/
 # PROJECT SPECIFIC
 # ================================
 
-# Development scripts (contain environment variables)
-start-all.sh
-stop-all.sh
-*.sh
-
-# Scripts - Keep all scripts but exclude sensitive ones
+# Development scripts with sensitive data
 scripts/deploy-prod.sh
 scripts/secrets/
 scripts/private/
@@ -451,6 +463,16 @@ docs/credentials/
 infrastructure/secrets/
 infrastructure/private/
 infrastructure/production/
+
+# User-specific files
+*.local
+*.personal
+*.private
+
+# Session and cache files
+.session
+.sessions/
+session-*
 
 # ================================
 # PACKAGE MANAGERS

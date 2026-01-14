@@ -4,20 +4,28 @@ FROM node:20-alpine AS build
 # Establecer directorio de trabajo
 WORKDIR /app
 
+# Instalar herramientas necesarias para el build
+RUN apk add --no-cache git
+
 # Copiar archivos de configuración de npm
 COPY frontend/package*.json ./
 
-# Instalar dependencias (se cachea si no cambian package files)
-RUN npm ci --only=production
+# Instalar dependencias (incluyendo devDependencies para el build)
+RUN npm ci
 
 # Copiar código fuente
 COPY frontend/ .
 
-# Construir aplicación para producción
-RUN npm run build
+# Construir aplicación para producción con optimizaciones
+ARG BUILD_MODE=production
+ENV NODE_ENV=production
+RUN npm run build:prod
 
-# Imagen final con nginx
+# Imagen final con nginx optimizada para producción
 FROM nginx:1.25-alpine
+
+# Instalar herramientas necesarias
+RUN apk add --no-cache curl
 
 # Crear usuario no-root para seguridad
 RUN addgroup -g 1001 -S appgroup && \
@@ -29,15 +37,13 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copiar configuración personalizada de nginx
 COPY infrastructure/docker/nginx.conf /etc/nginx/nginx.conf
 
-# Cambiar propietario de archivos necesarios
-RUN chown -R appuser:appgroup /usr/share/nginx/html && \
+# Crear directorios necesarios y cambiar propietario
+RUN mkdir -p /var/cache/nginx /var/log/nginx /var/run/nginx && \
+    chown -R appuser:appgroup /usr/share/nginx/html && \
     chown -R appuser:appgroup /var/cache/nginx && \
     chown -R appuser:appgroup /var/log/nginx && \
+    chown -R appuser:appgroup /var/run/nginx && \
     chown -R appuser:appgroup /etc/nginx/conf.d
-
-# Crear directorio para PID de nginx
-RUN mkdir -p /var/run/nginx && \
-    chown -R appuser:appgroup /var/run/nginx
 
 # Cambiar a usuario no-root
 USER appuser
@@ -45,9 +51,9 @@ USER appuser
 # Exponer puerto
 EXPOSE 8080
 
-# Health check
+# Health check optimizado
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
-# Comando de inicio
+# Comando de inicio con configuración optimizada
 CMD ["nginx", "-g", "daemon off;"]

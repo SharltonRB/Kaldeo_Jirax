@@ -5,11 +5,23 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 20000
-      idle-timeout: 300000
-      max-lifetime: 1200000
+      # Optimized connection pool settings for production
+      maximum-pool-size: ${DB_POOL_SIZE:30}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
+      leak-detection-threshold: ${DB_LEAK_DETECTION:60000}
+      pool-name: IssueTrackerHikariCP
+      # Performance optimizations
+      auto-commit: false
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+      initialization-fail-timeout: 1
+      isolate-internal-queries: false
+      allow-pool-suspension: true
+      read-only: false
+      register-mbeans: true
   
   jpa:
     hibernate:
@@ -18,37 +30,242 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        # JDBC and batching optimizations
+        jdbc:
+          batch_size: ${HIBERNATE_BATCH_SIZE:50}
+          fetch_size: ${HIBERNATE_FETCH_SIZE:50}
+          batch_versioned_data: true
+          lob:
+            non_contextual_creation: true
+        order_inserts: true
+        order_updates: true
+        generate_statistics: ${HIBERNATE_STATS:false}
+        # Connection and statement optimizations
+        connection:
+          provider_disables_autocommit: true
+        temp:
+          use_jdbc_metadata_defaults: false
+        # Query optimizations
+        query:
+          plan_cache_max_size: ${HIBERNATE_QUERY_CACHE_SIZE:2048}
+          plan_parameter_metadata_max_size: ${HIBERNATE_PARAM_CACHE_SIZE:128}
+        # Second level cache configuration
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+          # Cache regions configuration
+          default_cache_concurrency_strategy: read_write
+        # Performance monitoring
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: ${SLOW_QUERY_THRESHOLD:1000}
   
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: false
+    validate-on-migrate: true
+    clean-disabled: true
   
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      timeout: 2000ms
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:3000ms}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:3000ms}
+      client-type: lettuce
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
+          max-active: ${REDIS_POOL_MAX_ACTIVE:16}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:4}
+          max-wait: ${REDIS_POOL_MAX_WAIT:3000ms}
+          time-between-eviction-runs: 30s
+        shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:200ms}
+        cluster:
+          refresh:
+            adaptive: true
+            period: 30s
+  
+  security:
+    require-ssl: ${REQUIRE_SSL:false}
 
 server:
   port: ${PORT:8080}
+  servlet:
+    context-path: /api
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+  http2:
+    enabled: ${HTTP2_ENABLED:true}
+  ssl:
+    enabled: ${SSL_ENABLED:false}
+    key-store: ${SSL_KEY_STORE:}
+    key-store-password: ${SSL_KEY_STORE_PASSWORD:}
+    key-store-type: ${SSL_KEY_STORE_TYPE:PKCS12}
+    key-alias: ${SSL_KEY_ALIAS:issuetracker}
+    protocol: TLS
+    enabled-protocols: TLSv1.2,TLSv1.3
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
 
 logging:
   level:
-    com.issuetracker: INFO
+    com.issuetracker: ${LOG_LEVEL:INFO}
     org.springframework: WARN
     org.hibernate: WARN
+    org.springframework.security: ${SECURITY_LOG_LEVEL:WARN}
+    org.springframework.web.filter.CommonsRequestLoggingFilter: ${REQUEST_LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
   file:
     name: logs/application.log
+    max-size: ${LOG_MAX_SIZE:50MB}
+    max-history: ${LOG_MAX_HISTORY:30}
+    total-size-cap: ${LOG_TOTAL_SIZE_CAP:1GB}
+  logback:
+    rollingpolicy:
+      clean-history-on-start: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: ${PROMETHEUS_ENABLED:true}
+  metrics:
+    export:
+      prometheus:
+        enabled: ${PROMETHEUS_ENABLED:true}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+      slo:
+        http.server.requests: 100ms,200ms,500ms,1s,2s
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+      threshold: ${HEALTH_DISK_THRESHOLD:1GB}
 
 # Production JWT configuration - MUST use environment variables
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+# CORS Configuration - Restrictive for production
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://yourdomain.com}
+  allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+  allowed-headers: ${CORS_ALLOWED_HEADERS:Authorization,Content-Type,Accept,Origin,X-Requested-With}
+  allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+  max-age: ${CORS_MAX_AGE:3600}
+
+# Rate Limiting Configuration - Production values
+rate-limit:
+  auth:
+    requests-per-minute: ${AUTH_RATE_LIMIT:10}
+    burst-capacity: ${AUTH_BURST_CAPACITY:20}
+  api:
+    requests-per-minute: ${API_RATE_LIMIT:100}
+    burst-capacity: ${API_BURST_CAPACITY:200}
+
+# JVM Performance Configuration
+jvm:
+  # Memory settings (should be overridden by environment variables)
+  heap:
+    initial: ${JVM_HEAP_INITIAL:512m}
+    maximum: ${JVM_HEAP_MAX:2g}
+  # Garbage collection settings
+  gc:
+    # Use G1GC for better performance with large heaps
+    collector: ${JVM_GC_COLLECTOR:G1GC}
+    # G1 specific settings
+    g1:
+      max-gc-pause-millis: ${JVM_G1_MAX_PAUSE:200}
+      heap-region-size: ${JVM_G1_REGION_SIZE:16m}
+  # Performance monitoring
+  monitoring:
+    jfr-enabled: ${JVM_JFR_ENABLED:true}
+    gc-logging: ${JVM_GC_LOGGING:true}
+  # Thread settings
+  threads:
+    # Optimize thread stack size
+    stack-size: ${JVM_THREAD_STACK_SIZE:1m}
+
+# Application Performance Configuration
+performance:
+  # Async processing configuration
+  async:
+    core-pool-size: ${ASYNC_CORE_POOL_SIZE:4}
+    max-pool-size: ${ASYNC_MAX_POOL_SIZE:16}
+    queue-capacity: ${ASYNC_QUEUE_CAPACITY:100}
+    thread-name-prefix: "async-exec-"
+    keep-alive-seconds: ${ASYNC_KEEP_ALIVE:60}
+  # Request processing optimization
+  request:
+    # Enable request compression
+    compression-enabled: true
+    # Minimum response size to compress
+    compression-min-size: ${COMPRESSION_MIN_SIZE:1024}
+    # Connection timeout settings
+    connection-timeout: ${REQUEST_CONNECTION_TIMEOUT:30000}
+    read-timeout: ${REQUEST_READ_TIMEOUT:60000}
+security:
+  csp:
+    policy: ${CSP_POLICY:default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'}
+  hsts:
+    max-age: ${HSTS_MAX_AGE:31536000}
+    include-subdomains: ${HSTS_INCLUDE_SUBDOMAINS:true}
+    preload: ${HSTS_PRELOAD:true}
+
+# Cache Configuration - Production optimized
+cache:
+  redis:
+    # Default TTL for cached entries (5 minutes)
+    time-to-live: ${CACHE_TTL:300}
+    # Don't cache null values to save memory
+    cache-null-values: false
+    # Enable cache statistics for monitoring
+    enable-statistics: ${CACHE_STATS:true}
+    # Key prefix for multi-tenant scenarios
+    key-prefix: ${CACHE_KEY_PREFIX:issuetracker}
+    # Specific TTL configurations for different cache types
+    dashboard-metrics-ttl: ${DASHBOARD_CACHE_TTL:180}
+    project-statistics-ttl: ${PROJECT_STATS_CACHE_TTL:300}
+    sprint-statistics-ttl: ${SPRINT_STATS_CACHE_TTL:120}
+    user-data-ttl: ${USER_DATA_CACHE_TTL:600}
+  caffeine:
+    # Local cache configuration for frequently accessed data
+    spec: maximumSize=${LOCAL_CACHE_SIZE:2000},expireAfterWrite=${LOCAL_CACHE_TTL:300s},recordStats
+    # Specific configurations for different cache regions
+    dashboard-spec: maximumSize=500,expireAfterWrite=180s,recordStats
+    user-spec: maximumSize=1000,expireAfterWrite=600s,recordStats
+    project-spec: maximumSize=1000,expireAfterWrite=300s,recordStats

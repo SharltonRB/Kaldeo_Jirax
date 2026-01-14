@@ -36,6 +36,17 @@ logging:
     com.issuetracker: INFO
     org.springframework.web: INFO
 
+# Actuator configuration for development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+
 # Development-specific JWT secret - ONLY FOR DEVELOPMENT
 # NEVER use this in production - always use environment variables
 jwt:

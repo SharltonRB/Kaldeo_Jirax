@@ -43,7 +43,7 @@ public class DashboardController {
      * @return dashboard metrics DTO
      */
     @GetMapping("/metrics")
-    @Cacheable(value = "dashboardMetrics", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = "dashboardMetrics", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null ? T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() : 'anonymous'", condition = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null")
     public ResponseEntity<DashboardMetricsDto> getDashboardMetrics() {
         logger.debug("Retrieving dashboard metrics for authenticated user");
 
@@ -68,7 +68,7 @@ public class DashboardController {
      * @return project statistics map
      */
     @GetMapping("/projects/{projectId}/statistics")
-    @Cacheable(value = "projectStatistics", key = "#projectId + '_' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = "projectStatistics", key = "#projectId + '_' + (T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null ? T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() : 'anonymous')", condition = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null")
     public ResponseEntity<Map<String, Object>> getProjectStatistics(@PathVariable Long projectId) {
         logger.debug("Retrieving project statistics for project {} and authenticated user", projectId);
 
@@ -97,7 +97,7 @@ public class DashboardController {
      * @return sprint statistics map
      */
     @GetMapping("/sprints/{sprintId}/statistics")
-    @Cacheable(value = "sprintStatistics", key = "#sprintId + '_' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = "sprintStatistics", key = "#sprintId + '_' + (T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null ? T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() : 'anonymous')", condition = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null")
     public ResponseEntity<Map<String, Object>> getSprintStatistics(@PathVariable Long sprintId) {
         logger.debug("Retrieving sprint statistics for sprint {} and authenticated user", sprintId);
 
@@ -125,7 +125,7 @@ public class DashboardController {
      * @return summary metrics map
      */
     @GetMapping("/summary")
-    @Cacheable(value = "dashboardSummary", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = "dashboardSummary", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null ? T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() : 'anonymous'", condition = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication() != null")
     public ResponseEntity<Map<String, Object>> getDashboardSummary() {
         logger.debug("Retrieving dashboard summary for authenticated user");
 

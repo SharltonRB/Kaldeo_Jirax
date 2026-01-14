@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/services/api';
 import { FrontendUser, mapUserToFrontend, handleApiError } from '@/utils/api-response';
+import { tokenStorage, secureStorage } from '@/utils/secure-storage';
 import type { LoginRequest, RegisterRequest } from '@/types';
 
 interface AuthContextType {
@@ -33,14 +34,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Check if session is still valid
+        if (!secureStorage.isSessionValid()) {
+          // Session expired, clear everything
+          tokenStorage.clearTokens();
+          tokenStorage.clearUserData();
+          setIsLoading(false);
+          return;
+        }
+
+        // Try to get stored user data first
+        const storedUserData = await tokenStorage.getUserData();
+        if (storedUserData) {
+          setUser(storedUserData);
+        }
+
+        // Verify authentication with backend (with error handling)
         if (authService.isAuthenticated()) {
-          const currentUser = await authService.getCurrentUser();
-          setUser(mapUserToFrontend(currentUser));
+          try {
+            const currentUser = await authService.getCurrentUser();
+            const frontendUser = mapUserToFrontend(currentUser);
+            setUser(frontendUser);
+            
+            // Update stored user data
+            await tokenStorage.setUserData(frontendUser);
+          } catch (error) {
+            console.error('Failed to verify authentication:', error);
+            // Don't fail completely, just clear invalid tokens
+            authService.logout();
+            tokenStorage.clearUserData();
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
-        // Clear invalid tokens
+        // Clear invalid tokens and user data
         authService.logout();
+        tokenStorage.clearUserData();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -58,7 +89,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       queryClient.clear();
       
       const response = await authService.login(credentials);
-      setUser(mapUserToFrontend(response.user));
+      const frontendUser = mapUserToFrontend(response.user);
+      
+      setUser(frontendUser);
+      
+      // Store user data securely
+      await tokenStorage.setUserData(frontendUser);
+      
+      // Update session timestamp
+      secureStorage.updateSessionTimestamp();
     } catch (error) {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
@@ -77,7 +116,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       queryClient.clear();
       
       const response = await authService.register(userData);
-      setUser(mapUserToFrontend(response.user));
+      const frontendUser = mapUserToFrontend(response.user);
+      
+      setUser(frontendUser);
+      
+      // Store user data securely
+      await tokenStorage.setUserData(frontendUser);
+      
+      // Update session timestamp
+      secureStorage.updateSessionTimestamp();
     } catch (error) {
       const errorMessage = handleApiError(error);
       setError(errorMessage);
@@ -89,6 +136,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = (): void => {
     authService.logout();
+    tokenStorage.clearTokens();
+    tokenStorage.clearUserData();
+    secureStorage.clear();
     setUser(null);
     setError(null);
     

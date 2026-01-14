@@ -7,6 +7,8 @@ import com.issuetracker.exception.ResourceNotFoundException;
 import com.issuetracker.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -60,6 +62,13 @@ public class IssueService {
      * @return the created issue DTO
      * @throws ResourceNotFoundException if project or issue type not found
      */
+    @Caching(evict = {
+        @CacheEvict(value = "dashboardMetrics", key = "#user.email"),
+        @CacheEvict(value = "dashboardSummary", key = "#user.email"),
+        @CacheEvict(value = "projectStatistics", key = "#request.projectId + '_' + #user.email"),
+        @CacheEvict(value = "userIssues", key = "#user.email"),
+        @CacheEvict(value = "sprintIssues", key = "#request.sprintId + '_' + #user.email", condition = "#request.sprintId != null")
+    })
     public IssueDto createIssue(CreateIssueRequest request, User user) {
         logger.debug("Creating issue '{}' for user {}", request.getTitle(), user.getId());
 
@@ -126,6 +135,14 @@ public class IssueService {
      * @return the updated issue DTO
      * @throws ResourceNotFoundException if issue not found or not owned by user
      */
+    @Caching(evict = {
+        @CacheEvict(value = "dashboardMetrics", key = "#user.email"),
+        @CacheEvict(value = "dashboardSummary", key = "#user.email"),
+        @CacheEvict(value = "projectStatistics", allEntries = true),
+        @CacheEvict(value = "sprintStatistics", allEntries = true),
+        @CacheEvict(value = "userIssues", key = "#user.email"),
+        @CacheEvict(value = "sprintIssues", allEntries = true)
+    })
     public IssueDto updateIssue(Long issueId, UpdateIssueRequest request, User user) {
         logger.info("📝 Updating issue {} for user: {}", issueId, user.getEmail());
 
@@ -218,6 +235,14 @@ public class IssueService {
      * @return the updated issue DTO
      * @throws InvalidWorkflowTransitionException if transition is invalid
      */
+    @Caching(evict = {
+        @CacheEvict(value = "dashboardMetrics", key = "#user.email"),
+        @CacheEvict(value = "dashboardSummary", key = "#user.email"),
+        @CacheEvict(value = "projectStatistics", allEntries = true),
+        @CacheEvict(value = "sprintStatistics", allEntries = true),
+        @CacheEvict(value = "userIssues", key = "#user.email"),
+        @CacheEvict(value = "sprintIssues", allEntries = true)
+    })
     public IssueDto updateIssueStatus(Long issueId, StatusUpdateRequest request, User user) {
         logger.info("🔄 Updating status of issue {} to {} for user: {}", 
                     issueId, request.getNewStatus(), user.getEmail());

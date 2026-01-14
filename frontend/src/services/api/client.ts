@@ -1,44 +1,51 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiError } from '@/types';
+import { tokenStorage } from '@/utils/secure-storage';
 
 // Create axios instance with base configuration
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000,
+  baseURL: import.meta.env.MODE === 'development' ? '/api' : import.meta.env.VITE_API_BASE_URL || '/api',
+  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '10000'),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Token management
-const TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
-
-export const getAccessToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
+// Token management using secure storage
+export const getAccessToken = async (): Promise<string | null> => {
+  return await tokenStorage.getAccessToken();
 };
 
-export const getRefreshToken = (): string | null => {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+export const getRefreshToken = async (): Promise<string | null> => {
+  return await tokenStorage.getRefreshToken();
 };
 
-export const setTokens = (accessToken: string, refreshToken: string): void => {
-  localStorage.setItem(TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+export const setTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
+  await tokenStorage.setAccessToken(accessToken);
+  await tokenStorage.setRefreshToken(refreshToken);
 };
 
 export const clearTokens = (): void => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  tokenStorage.clearTokens();
 };
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
+  async (config) => {
+    const token = await getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add CSRF protection for state-changing requests
+    if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
+      // Add CSRF token if available
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -58,7 +65,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = getRefreshToken();
+      const refreshToken = await getRefreshToken();
       if (refreshToken) {
         try {
           // Try to refresh the token
@@ -67,7 +74,7 @@ apiClient.interceptors.response.use(
           });
 
           const { access_token, refresh_token: newRefreshToken } = response.data;
-          setTokens(access_token, newRefreshToken);
+          await setTokens(access_token, newRefreshToken);
 
           // Retry the original request with new token
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
@@ -84,6 +91,18 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Handle rate limiting
+    if (error.response?.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      const rateLimitReset = error.response.headers['x-ratelimit-reset'];
+      
+      console.warn('Rate limit exceeded:', {
+        retryAfter,
+        rateLimitReset,
+        endpoint: error.config?.url,
+      });
+    }
+
     // Transform error to our ApiError format
     const apiError: ApiError = {
       message: error.response?.data?.message || error.message || 'An error occurred',
@@ -96,7 +115,7 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Generic API methods
+// Generic API methods with enhanced security
 export const api = {
   get: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
     apiClient.get(url, config).then((response) => response.data),

@@ -47,6 +47,9 @@ import { sprintService } from '@/services/api/sprint.service';
 import { IssueStatus } from '@/types';
 import { FrontendIssue, handleApiError } from '@/utils/api-response';
 import SprintCalendar from '@/components/ui/SprintCalendar';
+import SimpleSessionWarning from '@/components/ui/SimpleSessionWarning';
+import { initializeCSP } from '@/utils/csp-config';
+import { sanitizeText, sanitizeHtml } from '@/utils/sanitization';
 
 /***
  * =========================================================================================
@@ -515,6 +518,23 @@ const useApp = () => {
  * =========================================================================================
  */
 
+// Modal size variants for consistent sizing across the app
+const MODAL_SIZES = {
+  sm: 'w-full max-w-md',           // ~448px - Small confirmations, simple forms
+  md: 'w-full max-w-lg',           // ~512px - Standard forms, single-column content  
+  lg: 'w-full max-w-xl',           // ~576px - Wider forms, more content
+  xl: 'w-full max-w-2xl',          // ~672px - Large forms
+  '2xl': 'w-full max-w-3xl',       // ~768px - Wide content, dual-column
+  '3xl': 'w-full max-w-4xl',       // ~896px - Very wide content
+  '4xl': 'w-full max-w-5xl',       // ~1024px - Extra wide content
+  '5xl': 'w-full max-w-6xl',       // ~1152px - Maximum width
+  '6xl': 'w-full max-w-7xl',       // ~1280px - Ultra wide
+  responsive: 'w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl', // Much more aggressive responsive sizing
+  form: 'w-full max-w-4xl',        // ~896px - Optimal for forms
+  wide: 'w-full max-w-5xl',        // ~1024px - Wide modals
+  ultrawide: 'w-full max-w-6xl'    // ~1152px - Ultra wide modals
+} as const;
+
 const GlassCard = ({ children, className = '', onClick }: { children: React.ReactNode, className?: string, onClick?: () => void }) => (
   <div 
     onClick={onClick} 
@@ -767,7 +787,7 @@ const DeleteProjectConfirmationModal = ({ isOpen, onClose, onConfirm, project }:
       
       {/* Modal content */}
       <div className="relative">
-        <GlassCard className="w-full max-w-sm p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl animate-in zoom-in-95 duration-300">
+        <GlassCard className={`${MODAL_SIZES.lg} p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl animate-in zoom-in-95 duration-300`}>
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
@@ -812,7 +832,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, issue, onDelete, onMoveToBac
       
       {/* Modal content */}
       <div className="relative">
-        <GlassCard className="w-full max-w-sm p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl animate-in zoom-in-95 duration-300">
+        <GlassCard className={`${MODAL_SIZES.lg} p-6 bg-white/95 dark:bg-[#09090b]/95 border-red-200 dark:border-red-900/30 shadow-2xl animate-in zoom-in-95 duration-300`}>
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
@@ -969,7 +989,7 @@ const SprintCompletionModal = ({ isOpen, onClose, onConfirm, warningDetails }: {
       
       {/* Modal content */}
       <div className="relative">
-        <GlassCard className="w-full max-w-md p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
+        <GlassCard className={`${MODAL_SIZES.xl} p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300`}>
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -1380,7 +1400,7 @@ const CreateIssueModal = () => {
       
       {/* Modal content */}
       <div className="relative">
-        <GlassCard className="w-full max-w-3xl p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
+        <GlassCard className="w-full max-w-5xl p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold dark:text-white">Create New Issue</h3>
           <button onClick={() => setCreateIssueModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
@@ -1666,7 +1686,7 @@ const IssueDetailModal = () => {
 
   return (
     <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
-      <GlassCard className="w-full max-w-5xl h-[85vh] overflow-hidden flex flex-col bg-white/95 dark:bg-[#09090b]/95 shadow-2xl border-gray-200 dark:border-white/10">
+      <GlassCard className={`${MODAL_SIZES.ultrawide} h-[85vh] overflow-hidden flex flex-col bg-white/95 dark:bg-[#09090b]/95 shadow-2xl border-gray-200 dark:border-white/10`}>
         <div className="px-6 py-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center bg-white/50 dark:bg-[#09090b]/50 z-10 shrink-0">
           <div className="flex items-center gap-4 flex-1">
             {issueHistory.length > 0 && (
@@ -1977,11 +1997,21 @@ const AuthView = () => {
 const Dashboard = () => {
   const { issues, sprints, projects, navigate, setSelectedIssueId, searchQuery } = useApp();
   
-  // Use backend dashboard APIs
-  const { data: dashboardMetrics, isLoading: metricsLoading } = useDashboardMetrics();
-  const { data: recentIssuesData, isLoading: recentLoading } = useRecentIssues(5);
-  const { data: activeSprintData, isLoading: sprintLoading } = useActiveSprintSummary();
-  const { data: issueDistribution, isLoading: distributionLoading } = useIssueDistribution();
+  // Temporarily disable backend dashboard APIs to fix infinite re-renders
+  // const { data: dashboardMetrics, isLoading: metricsLoading } = useDashboardMetrics();
+  // const { data: recentIssuesData, isLoading: recentLoading } = useRecentIssues(5);
+  // const { data: activeSprintData, isLoading: sprintLoading } = useActiveSprintSummary();
+  // const { data: issueDistribution, isLoading: distributionLoading } = useIssueDistribution();
+
+  // Use local data for now
+  const dashboardMetrics = null;
+  const recentIssuesData = null;
+  const activeSprintData = null;
+  const issueDistribution = null;
+  const metricsLoading = false;
+  const recentLoading = false;
+  const sprintLoading = false;
+  const distributionLoading = false;
 
   // Fallback to local data if backend is not available
   const activeSprint = activeSprintData?.sprint || sprints.find(s => s.status === 'ACTIVE');
@@ -2429,7 +2459,7 @@ const ProjectsList = () => {
             
             {/* Modal content */}
             <div className="relative">
-              <GlassCard className="w-full max-w-md p-8 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
+              <GlassCard className={`${MODAL_SIZES.xl} p-8 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300`}>
               <h3 className="text-xl font-bold text-center mb-6 dark:text-white">What kind of Issue is it?</h3>
               <div className="grid grid-cols-2 gap-4">
                 <button 
@@ -2469,7 +2499,7 @@ const ProjectsList = () => {
             
             {/* Modal content */}
             <div className="relative">
-              <GlassCard className="w-full max-w-md p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl max-h-[80vh] flex flex-col animate-in zoom-in-95 duration-300">
+              <GlassCard className={`${MODAL_SIZES.xl} p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl max-h-[80vh] flex flex-col animate-in zoom-in-95 duration-300`}>
               <h3 className="text-xl font-bold text-center mb-2 dark:text-white">Select Parent Epic</h3>
               <p className="text-center text-sm text-gray-500 mb-6">This issue must belong to an Epic.</p>
               
@@ -2626,7 +2656,7 @@ const ProjectsList = () => {
           
           {/* Modal content */}
           <div className="relative">
-            <GlassCard className="w-full max-w-lg p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
+            <GlassCard className="w-full max-w-4xl p-6 bg-white/95 dark:bg-[#09090b]/95 border-white/30 shadow-2xl animate-in zoom-in-95 duration-300">
             <h3 className="text-xl font-bold mb-4 dark:text-white">Create Project</h3>
             <div className="space-y-4">
               <GlassInput 
@@ -3859,10 +3889,18 @@ const AppContent = () => {
 };
 
 export default function App() {
+  // Initialize Content Security Policy on app load (only in production)
+  useEffect(() => {
+    if (import.meta.env.MODE === 'production') {
+      initializeCSP();
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <ToastProvider>
         <AppProvider>
+          <SimpleSessionWarning />
           <AppContent />
         </AppProvider>
       </ToastProvider>
