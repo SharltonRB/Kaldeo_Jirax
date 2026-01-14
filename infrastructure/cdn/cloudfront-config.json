@@ -1,0 +1,113 @@
+{
+  "Comment": "CloudFront distribution for Personal Issue Tracker Frontend",
+  "DefaultRootObject": "index.html",
+  "Origins": [
+    {
+      "Id": "S3-PersonalIssueTracker",
+      "DomainName": "your-bucket-name.s3.amazonaws.com",
+      "S3OriginConfig": {
+        "OriginAccessIdentity": "origin-access-identity/cloudfront/YOUR-OAI-ID"
+      }
+    }
+  ],
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-PersonalIssueTracker",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": ["GET", "HEAD", "OPTIONS"],
+    "CachedMethods": ["GET", "HEAD"],
+    "Compress": true,
+    "ForwardedValues": {
+      "QueryString": false,
+      "Cookies": {
+        "Forward": "none"
+      }
+    },
+    "MinTTL": 0,
+    "DefaultTTL": 86400,
+    "MaxTTL": 31536000,
+    "TrustedSigners": {
+      "Enabled": false
+    }
+  },
+  "CacheBehaviors": [
+    {
+      "PathPattern": "/static/js/*",
+      "TargetOriginId": "S3-PersonalIssueTracker",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "AllowedMethods": ["GET", "HEAD"],
+      "CachedMethods": ["GET", "HEAD"],
+      "Compress": true,
+      "ForwardedValues": {
+        "QueryString": false,
+        "Cookies": {
+          "Forward": "none"
+        }
+      },
+      "MinTTL": 31536000,
+      "DefaultTTL": 31536000,
+      "MaxTTL": 31536000
+    },
+    {
+      "PathPattern": "/static/css/*",
+      "TargetOriginId": "S3-PersonalIssueTracker",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "AllowedMethods": ["GET", "HEAD"],
+      "CachedMethods": ["GET", "HEAD"],
+      "Compress": true,
+      "ForwardedValues": {
+        "QueryString": false,
+        "Cookies": {
+          "Forward": "none"
+        }
+      },
+      "MinTTL": 31536000,
+      "DefaultTTL": 31536000,
+      "MaxTTL": 31536000
+    },
+    {
+      "PathPattern": "*.html",
+      "TargetOriginId": "S3-PersonalIssueTracker",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "AllowedMethods": ["GET", "HEAD"],
+      "CachedMethods": ["GET", "HEAD"],
+      "Compress": true,
+      "ForwardedValues": {
+        "QueryString": false,
+        "Cookies": {
+          "Forward": "none"
+        }
+      },
+      "MinTTL": 0,
+      "DefaultTTL": 0,
+      "MaxTTL": 86400
+    }
+  ],
+  "CustomErrorResponses": [
+    {
+      "ErrorCode": 404,
+      "ResponsePagePath": "/index.html",
+      "ResponseCode": "200",
+      "ErrorCachingMinTTL": 300
+    },
+    {
+      "ErrorCode": 403,
+      "ResponsePagePath": "/index.html",
+      "ResponseCode": "200",
+      "ErrorCachingMinTTL": 300
+    }
+  ],
+  "Enabled": true,
+  "PriceClass": "PriceClass_100",
+  "ViewerCertificate": {
+    "CloudFrontDefaultCertificate": true
+  },
+  "WebACLId": "",
+  "HttpVersion": "http2",
+  "IsIPV6Enabled": true,
+  "Logging": {
+    "Enabled": true,
+    "IncludeCookies": false,
+    "Bucket": "your-logs-bucket.s3.amazonaws.com",
+    "Prefix": "cloudfront-logs/"
+  }
+}
