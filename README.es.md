@@ -1,5 +1,7 @@
 # Personal Issue Tracker
 
+[🇬🇧 English Version](README.md)
+
 Una aplicación de gestión de proyectos personales inspirada en Jira, construida con Spring Boot y React TypeScript.
 
 ## 🏗️ Estructura del Proyecto
@@ -122,13 +124,14 @@ docker build -f infrastructure/docker/Dockerfile.frontend -t personal-issue-trac
 
 ## 📚 Documentación
 
-La documentación completa está disponible en el directorio `docs/`:
+La documentación completa está disponible en el directorio [`docs/`](docs/):
 
-- **[Documentación de API](docs/api/)** - Endpoints de la API REST
-- **[Arquitectura](docs/architecture/)** - Diseño del sistema y patrones
-- **[Guía de Desarrollo](docs/development/)** - Flujos de trabajo de desarrollo
-- **[Estrategia de Testing](docs/testing/)** - Enfoques y herramientas de testing
-- **[Guía de Despliegue](docs/deployment/)** - Despliegue en producción
+- **[Índice de Documentación](docs/INDEX.md)** - Vista general completa de la documentación
+- **[Guía de Desarrollo](docs/DEVELOPMENT.md)** - Instrucciones detalladas de configuración y desarrollo
+- **[Arquitectura](docs/architecture/)** - Diseño y arquitectura del sistema
+- **[Seguridad](docs/SECURITY.md)** - Guías y mejores prácticas de seguridad
+- **[Testing](docs/testing/)** - Estrategias y guías de testing
+- **[Despliegue en Producción](docs/PRODUCTION_DEPLOYMENT.md)** - Guía de despliegue en producción
 
 ## 🔧 Configuración
 
@@ -156,7 +159,7 @@ Ver [documentación de despliegue](docs/deployment/) para guías detalladas de d
 1. Seguir la estructura y convenciones del proyecto
 2. Actualizar documentación al hacer cambios
 3. Ejecutar tests antes de enviar cambios
-4. Usar los scripts proporcionados para consistencia
+4. Ver [Guía de Desarrollo](docs/DEVELOPMENT.md) para guías detalladas
 
 ## 📄 Licencia
 
@@ -164,7 +167,4 @@ Este proyecto es para uso educativo y personal.
 
 ---
 
-## 🌐 Versiones de Idioma
-
-- **English**: [README.en.md](README.en.md)
-- **Español**: [README.md](README.md)
+**Para documentación detallada, guías e información de arquitectura, ver el directorio [`docs/`](docs/).**

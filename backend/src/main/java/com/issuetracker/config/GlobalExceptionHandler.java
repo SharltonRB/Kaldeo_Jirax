@@ -351,15 +351,70 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex, HttpServletRequest request) {
         
+        // Log full error details for debugging (server-side only)
         logger.error("Unexpected error on {}: {}", request.getRequestURI(), ex.getMessage(), ex);
         
+        // Return generic error message to prevent information leakage
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code("INTERNAL_SERVER_ERROR")
-                .message("An unexpected error occurred")
+                .message("An unexpected error occurred. Please try again later.")
                 .path(request.getRequestURI())
                 .timestamp(Instant.now())
                 .build();
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    /**
+     * Handle SQL-related exceptions to prevent information leakage
+     */
+    @ExceptionHandler({
+        org.springframework.dao.DataAccessException.class,
+        java.sql.SQLException.class,
+        org.hibernate.exception.SQLGrammarException.class,
+        org.hibernate.exception.ConstraintViolationException.class
+    })
+    public ResponseEntity<ErrorResponse> handleDatabaseException(
+            Exception ex, HttpServletRequest request) {
+        
+        // Log full error details for debugging (server-side only)
+        logger.error("Database error on {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        
+        // Return generic error message to prevent SQL injection information leakage
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("DATABASE_ERROR")
+                .message("A database error occurred. Please try again later.")
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    /**
+     * Handle security-related exceptions
+     */
+    @ExceptionHandler({
+        org.springframework.security.core.userdetails.UsernameNotFoundException.class,
+        org.springframework.security.authentication.DisabledException.class,
+        org.springframework.security.authentication.LockedException.class,
+        org.springframework.security.authentication.AccountExpiredException.class,
+        org.springframework.security.authentication.CredentialsExpiredException.class
+    })
+    public ResponseEntity<ErrorResponse> handleSecurityException(
+            Exception ex, HttpServletRequest request) {
+        
+        // Log security events for monitoring
+        logger.warn("Security exception on {}: {}", request.getRequestURI(), ex.getClass().getSimpleName());
+        
+        // Return generic authentication error to prevent user enumeration
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("AUTHENTICATION_ERROR")
+                .message("Authentication failed. Please check your credentials.")
+                .path(request.getRequestURI())
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 }
