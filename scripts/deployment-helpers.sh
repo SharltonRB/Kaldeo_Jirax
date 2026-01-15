@@ -138,11 +138,11 @@ check_backend() {
     
     print_info "Verificando health endpoint..."
     
-    if curl -f -s "${BACKEND_URL}/actuator/health" > /dev/null; then
+    if curl -f -s "${BACKEND_URL}/api/actuator/health" > /dev/null; then
         print_success "Backend está funcionando!"
         echo ""
         print_info "Respuesta:"
-        curl -s "${BACKEND_URL}/actuator/health" | python3 -m json.tool 2>/dev/null || curl -s "${BACKEND_URL}/actuator/health"
+        curl -s "${BACKEND_URL}/api/actuator/health" | python3 -m json.tool 2>/dev/null || curl -s "${BACKEND_URL}/api/actuator/health"
     else
         print_error "Backend no responde o no está saludable"
         print_info "Verifica los logs en Railway"
