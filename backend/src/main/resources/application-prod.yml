@@ -240,7 +240,7 @@ performance:
     read-timeout: ${REQUEST_READ_TIMEOUT:60000}
 security:
   csp:
-    policy: ${CSP_POLICY:default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'}
+    policy: "${CSP_POLICY:default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'}"
   hsts:
     max-age: ${HSTS_MAX_AGE:31536000}
     include-subdomains: ${HSTS_INCLUDE_SUBDOMAINS:true}
