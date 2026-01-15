@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:prod": "tsc && vite build --mode production",
+    "vercel-build": "npm run build:prod",
     "build:staging": "tsc && vite build --mode staging",
     "build:analyze": "tsc && vite build --mode production && npx vite-bundle-analyzer dist/stats.html",
     "build:profile": "tsc && vite build --mode production --profile",
