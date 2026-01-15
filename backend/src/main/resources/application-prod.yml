@@ -66,27 +66,28 @@ spring:
     validate-on-migrate: true
     clean-disabled: true
   
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DATABASE:0}
-      timeout: ${REDIS_TIMEOUT:3000ms}
-      connect-timeout: ${REDIS_CONNECT_TIMEOUT:3000ms}
-      client-type: lettuce
-      lettuce:
-        pool:
-          max-active: ${REDIS_POOL_MAX_ACTIVE:16}
-          max-idle: ${REDIS_POOL_MAX_IDLE:8}
-          min-idle: ${REDIS_POOL_MIN_IDLE:4}
-          max-wait: ${REDIS_POOL_MAX_WAIT:3000ms}
-          time-between-eviction-runs: 30s
-        shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:200ms}
-        cluster:
-          refresh:
-            adaptive: true
-            period: 30s
+  # Redis Configuration - Commented out for Railway deployment without Redis
+  # data:
+  #   redis:
+  #     host: ${REDIS_HOST:localhost}
+  #     port: ${REDIS_PORT:6379}
+  #     password: ${REDIS_PASSWORD:}
+  #     database: ${REDIS_DATABASE:0}
+  #     timeout: ${REDIS_TIMEOUT:3000ms}
+  #     connect-timeout: ${REDIS_CONNECT_TIMEOUT:3000ms}
+  #     client-type: lettuce
+  #     lettuce:
+  #       pool:
+  #         max-active: ${REDIS_POOL_MAX_ACTIVE:16}
+  #         max-idle: ${REDIS_POOL_MAX_IDLE:8}
+  #         min-idle: ${REDIS_POOL_MIN_IDLE:4}
+  #         max-wait: ${REDIS_POOL_MAX_WAIT:3000ms}
+  #         time-between-eviction-runs: 30s
+  #       shutdown-timeout: ${REDIS_SHUTDOWN_TIMEOUT:200ms}
+  #       cluster:
+  #         refresh:
+  #           adaptive: true
+  #           period: 30s
   
   security:
     require-ssl: ${REQUIRE_SSL:false}
@@ -163,7 +164,7 @@ management:
         http.server.requests: 100ms,200ms,500ms,1s,2s
   health:
     redis:
-      enabled: true
+      enabled: false
     db:
       enabled: true
     diskspace:
