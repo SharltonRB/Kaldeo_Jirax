@@ -12,8 +12,12 @@ Esta carpeta **NO está en Git** (está en .gitignore) para mantener el reposito
 
 ## ¿Qué Contiene?
 
+**Guía Principal**:
+- **GUIA_DEPLOYMENT_COMPLETA.md** - ⭐ EMPIEZA AQUÍ (paso a paso en español)
+
+**Guías Adicionales**:
 - **QUICK_START_DEPLOYMENT.md** - Guía rápida de 30 minutos
-- **RAILWAY_DEPLOYMENT.es.md** - Guía completa en español
+- **RAILWAY_DEPLOYMENT.es.md** - Guía completa alternativa
 - **DEPLOYMENT_CHECKLIST.md** - Checklist paso a paso
 - **DEPLOYMENT_FAQ.md** - Preguntas frecuentes
 - Y más...
