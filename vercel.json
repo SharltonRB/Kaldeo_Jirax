@@ -1,7 +1,8 @@
 {
-  "buildCommand": "cd frontend && npm run build:prod",
+  "buildCommand": "cd frontend && npm ci && npm run build:prod",
   "outputDirectory": "frontend/dist",
-  "installCommand": "cd frontend && npm install",
+  "installCommand": "echo 'Skipping root install'",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./frontend",
   "framework": null,
   "rewrites": [
     {
