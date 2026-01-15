@@ -115,8 +115,10 @@ public class SecurityConfig {
         
         // Get allowed origins from environment or use default for development
         String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
+        System.out.println("CORS_ALLOWED_ORIGINS from environment: " + allowedOrigins);
         if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
             // Production: use specific origins
+            System.out.println("Setting allowed origins: " + allowedOrigins);
             configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         } else {
             // Development: allow localhost origins
