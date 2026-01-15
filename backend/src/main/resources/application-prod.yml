@@ -49,14 +49,10 @@ spring:
         query:
           plan_cache_max_size: ${HIBERNATE_QUERY_CACHE_SIZE:2048}
           plan_parameter_metadata_max_size: ${HIBERNATE_PARAM_CACHE_SIZE:128}
-        # Second level cache configuration
+        # Second level cache configuration - Disabled for simplicity
         cache:
-          use_second_level_cache: true
-          use_query_cache: true
-          region:
-            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
-          # Cache regions configuration
-          default_cache_concurrency_strategy: read_write
+          use_second_level_cache: false
+          use_query_cache: false
         # Performance monitoring
         session:
           events:
