@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm ci --prefix ./frontend && npm run build:prod --prefix ./frontend",
+  "buildCommand": "npm install --prefix ./frontend && npm run build:prod --prefix ./frontend",
   "outputDirectory": "frontend/dist",
   "installCommand": "echo 'Dependencies installed in buildCommand'",
   "framework": null,
