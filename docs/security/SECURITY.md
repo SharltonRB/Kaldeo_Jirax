@@ -1,212 +1,85 @@
-# Security Policy
+# Security Guidelines
 
-## 🔒 Security Overview
+## 🔒 Environment Variables & Secrets
 
-This document outlines the security practices and policies for the Personal Issue Tracker project.
+### ⚠️ NEVER COMMIT THESE FILES:
+- `.env` files (already in .gitignore)
+- Any file containing real passwords, API keys, or JWT secrets
+- Production configuration files
 
-## 🚨 Critical Security Rules
+### ✅ SAFE TO COMMIT:
+- `.env.example` files (with placeholder values)
+- Development configuration with placeholder secrets
+- Test configuration with test-only credentials
 
-### ❌ NEVER Commit These Files
-- `.env` files with real credentials
-- Private keys (`.key`, `.pem`, `.p12`)
-- Certificates and keystores
-- Database connection strings with passwords
-- API keys or authentication tokens
-- Personal configuration files
+## 🛡️ JWT Secrets
 
-### ✅ ALWAYS Use These Practices
-- Environment variables for all sensitive configuration
-- Strong, unique JWT secrets (minimum 256 bits)
-- `.env.example` files as templates
-- Regular security audits
-- Proper input validation
+### Development
+- Current development JWT secret is a placeholder
+- Safe for local development only
+- **NEVER use in production**
 
-## 🛡️ Security Checklist
-
-### Before Committing Code
-- [ ] Run security audit: `./scripts/security-audit.sh scan`
-- [ ] Verify no sensitive data in files
-- [ ] Check .gitignore compliance
-- [ ] Use environment variables for secrets
-- [ ] Update .env.example if needed
-
-### Environment Configuration
-- [ ] Use strong JWT secrets in production
-- [ ] Configure proper database credentials
-- [ ] Set up HTTPS in production
-- [ ] Enable proper CORS configuration
-- [ ] Configure rate limiting
-
-### Code Security
-- [ ] Validate all user inputs
-- [ ] Use parameterized queries
-- [ ] Implement proper authentication
-- [ ] Add authorization checks
-- [ ] Handle errors securely
-
-## 🔧 Security Tools
-
-### Automated Security Audit
+### Production
+Generate a secure JWT secret:
 ```bash
-# Run complete security scan
-./scripts/security-audit.sh scan
-
-# Apply automatic fixes
-./scripts/security-audit.sh fix
-
-# Generate security report
-./scripts/security-audit.sh report
+# Generate a secure 256-bit secret
+openssl rand -base64 64
 ```
 
-### Manual Security Checks
+## 🗄️ Database Credentials
+
+### Development
+- Username: `postgres`
+- Password: `postgres` (default for local development)
+- Database: `issue_tracker_dev`
+
+### Production
+- Use strong, unique passwords
+- Store in environment variables
+- Never hardcode in source code
+
+## 📝 Configuration Files
+
+### Safe Development Defaults
+These files contain safe development defaults:
+- `backend/src/main/resources/application.yml`
+- `backend/src/main/resources/application-dev.yml`
+- `frontend/.env.example`
+- `backend/.env.example`
+
+### Sensitive Files (Git Ignored)
+- `backend/.env`
+- `frontend/.env`
+- Any `application-local*.yml`
+- Any `application-secret*.yml`
+
+## 🚨 Security Checklist
+
+Before deploying to production:
+
+- [ ] Generate new JWT secret (256+ bits)
+- [ ] Use strong database passwords
+- [ ] Update all default credentials
+- [ ] Enable HTTPS/SSL
+- [ ] Review all environment variables
+- [ ] Ensure no secrets in source code
+- [ ] Test with production-like environment
+
+## 🔍 Audit Commands
+
+Check for potential secrets in code:
 ```bash
-# Check for sensitive files
-git status --ignored
+# Search for potential secrets (run from project root)
+grep -r "password\|secret\|key" --exclude-dir=node_modules --exclude-dir=target --exclude-dir=.git .
 
-# Verify .gitignore patterns
-./scripts/validate-gitignore.sh check
-
-# Search for potential secrets
-grep -r -i "password\|secret\|key" . --exclude-dir=node_modules
+# Check what's being tracked by git
+git ls-files | grep -E "\.(env|properties|yml)$"
 ```
 
-## 🚨 Security Incident Response
+## 📞 Reporting Security Issues
 
-### If Sensitive Data is Committed
-1. **Immediately** remove the sensitive data
-2. Change all exposed credentials
-3. Force push to rewrite history (if possible)
-4. Notify team members
-5. Update security practices
-
-### Commands to Remove Sensitive Data
-```bash
-# Remove file from git history
-git filter-branch --force --index-filter \
-  'git rm --cached --ignore-unmatch path/to/sensitive/file' \
-  --prune-empty --tag-name-filter cat -- --all
-
-# Alternative: Use BFG Repo-Cleaner
-java -jar bfg.jar --delete-files sensitive-file.txt
-```
-
-## 🔐 Environment Variables Guide
-
-### Required Environment Variables
-
-#### Backend (.env)
-```bash
-# Database
-DATABASE_URL=jdbc:postgresql://localhost:5432/issue_tracker_prod
-DB_USERNAME=your_username
-DB_PASSWORD=your_secure_password
-
-# JWT - Use strong, unique secrets
-JWT_SECRET=your-256-bit-secret-key
-JWT_EXPIRATION=86400000
-JWT_REFRESH_EXPIRATION=604800000
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your_redis_password
-```
-
-#### Frontend (.env)
-```bash
-# API Configuration
-VITE_API_BASE_URL=https://your-api-domain.com
-
-# Environment
-VITE_NODE_ENV=production
-```
-
-### Generating Secure Secrets
-```bash
-# Generate JWT secret (256 bits)
-openssl rand -base64 32
-
-# Generate strong password
-openssl rand -base64 24
-
-# Generate UUID
-uuidgen
-```
-
-## 🛠️ Security Configuration
-
-### JWT Security
-- Use minimum 256-bit secrets
-- Set appropriate expiration times
-- Implement token refresh mechanism
-- Store tokens securely in frontend
-
-### Database Security
-- Use connection pooling
-- Implement proper timeouts
-- Use parameterized queries
-- Regular security updates
-
-### API Security
-- Implement rate limiting
-- Use HTTPS in production
-- Validate all inputs
-- Implement proper CORS
-- Add security headers
-
-### Infrastructure Security
-- Use Docker secrets in production
-- Implement network segmentation
-- Regular security updates
-- Monitor for vulnerabilities
-
-## 📊 Security Monitoring
-
-### Automated Checks
-- Pre-commit hooks for sensitive data
-- Regular dependency vulnerability scans
-- Automated security testing in CI/CD
-- Log monitoring for security events
-
-### Manual Reviews
-- Monthly security audits
-- Code review for security issues
-- Configuration review
-- Access control review
-
-## 📚 Security Resources
-
-### Internal Documentation
-- [Security Guidelines](security-guidelines.md)
-- [.gitignore Guide](../development/gitignore-guide.md)
-- [Environment Configuration](../deployment/)
-
-### External Resources
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [Spring Security Documentation](https://spring.io/projects/spring-security)
-- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
-
-## 🆘 Contact
-
-For security concerns or questions:
-1. Run the security audit script
-2. Check this documentation
-3. Review the security guidelines
-4. Consult with the team lead
-
-## 📝 Security Updates
-
-This security policy should be reviewed and updated:
-- After any security incident
-- When adding new technologies
-- At least quarterly
-- When security best practices change
-
----
-
-**¡Recuerda: La seguridad es responsabilidad de todos!**
-
-## Versiones de Idioma
-
-- **English**: [SECURITY.en.md](SECURITY.en.md)
-- **Español**: [SECURITY.md](SECURITY.md)
+If you find a security vulnerability:
+1. **DO NOT** create a public issue
+2. Contact the maintainers privately
+3. Provide detailed information about the vulnerability
+4. Allow time for the issue to be addressed before disclosure
