@@ -409,6 +409,9 @@ personal-notes/
 scratch/
 dev-notes/
 
+# Personal deployment guides (not for Git)
+.deployment-guides/
+
 # Local development overrides
 local/
 local-config/

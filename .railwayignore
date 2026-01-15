@@ -1,0 +1,42 @@
+# Railway ignore file - archivos que no necesita Railway
+
+# Frontend (se deploya en Vercel)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Documentación
+docs/
+*.md
+!README.md
+
+# Tests
+backend/src/test/
+*.test.js
+*.spec.js
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+*.log
+logs/
+
+# Environment files (se configuran en Railway)
+.env
+.env.*
+!.env.example
+
+# Docker files (Railway usa el Dockerfile en la raíz)
+docker-compose*.yml
+infrastructure/docker/
+
+# Scripts
+scripts/
+
+# Otros
+.DS_Store
+*.swp
+*.swo
+*~

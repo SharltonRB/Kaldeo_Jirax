@@ -124,6 +124,26 @@ docker-compose up -d
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
+## 🚀 Production Deployment
+
+Deploy your application for free using Railway + Vercel:
+
+- **Backend (Railway)**: PostgreSQL + Redis + Spring Boot API
+- **Frontend (Vercel)**: React SPA with global CDN
+
+📖 **[Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md)** - Complete deployment guide
+
+Quick start:
+```bash
+# 1. Generate secure secrets
+./scripts/generate-secrets.sh
+
+# 2. Follow the production deployment guide
+# See docs/PRODUCTION_DEPLOYMENT.md for detailed instructions
+```
+
+💰 **100% Free** for this application with Railway ($5/month credit) + Vercel (unlimited)
+
 ## 🤝 Contributing
 
 1. Follow the project structure and conventions

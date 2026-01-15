@@ -150,9 +150,25 @@ REDIS_PORT=6379
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-## 🚀 Despliegue
+## 🚀 Despliegue a Producción
 
-Ver [documentación de despliegue](docs/deployment/) para guías detalladas de despliegue en diferentes entornos.
+Deploya tu aplicación **gratis** usando Railway + Vercel:
+
+- **Backend (Railway)**: PostgreSQL + Redis + Spring Boot API
+- **Frontend (Vercel)**: React SPA con CDN global
+
+📖 **[Guía de Deployment](docs/PRODUCTION_DEPLOYMENT.md)** - Guía completa de deployment
+
+Inicio rápido:
+```bash
+# 1. Genera secrets seguros
+./scripts/generate-secrets.sh
+
+# 2. Sigue la guía de deployment
+# Ver docs/PRODUCTION_DEPLOYMENT.md para instrucciones detalladas
+```
+
+💰 **100% Gratuito** para esta aplicación con Railway ($5/mes de crédito) + Vercel (ilimitado)
 
 ## 🤝 Contribuir
 
