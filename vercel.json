@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --prefix ./frontend && npm run build:prod --prefix ./frontend",
+  "buildCommand": "(cd frontend && npm install && npm run build:prod)",
   "outputDirectory": "frontend/dist",
   "installCommand": "echo 'Dependencies installed in buildCommand'",
   "framework": null,
