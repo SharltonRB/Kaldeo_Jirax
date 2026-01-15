@@ -1,6 +1,7 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build:prod",
   "outputDirectory": "frontend/dist",
+  "installCommand": "npm install --prefix frontend",
   "framework": null,
   "rewrites": [
     {
