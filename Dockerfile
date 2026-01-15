@@ -26,9 +26,9 @@ COPY --from=build /app/backend/target/*.jar app.jar
 # Exponer puerto (Railway asigna dinámicamente)
 EXPOSE 8080
 
-# Health check
+# Health check - Railway maneja esto, pero lo dejamos para Docker local
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
-    CMD curl -f http://localhost:8080/actuator/health || exit 1
+    CMD curl -f http://localhost:8080/api/actuator/health || exit 1
 
 # Comando de inicio con optimizaciones JVM para Railway
 ENTRYPOINT ["java", \
