@@ -31,12 +31,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD curl -f http://localhost:8080/api/actuator/health || exit 1
 
 # Comando de inicio con optimizaciones JVM para Railway
-ENTRYPOINT ["java", \
-    "-XX:+UseContainerSupport", \
-    "-XX:MaxRAMPercentage=75.0", \
-    "-XX:+UseG1GC", \
-    "-XX:+UseStringDeduplication", \
-    "-Djava.security.egd=file:/dev/./urandom", \
-    "-Dserver.port=${PORT:-8080}", \
-    "-jar", \
-    "app.jar"]
+# Railway inyecta la variable PORT automáticamente
+ENTRYPOINT ["sh", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/./urandom -Dserver.port=${PORT:-8080} -jar app.jar"]
