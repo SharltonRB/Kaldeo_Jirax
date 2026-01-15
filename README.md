@@ -11,29 +11,62 @@ A Jira-inspired personal project management application built with Spring Boot a
 - Maven 3.8+
 - Node.js 18+
 - Docker and Docker Compose
+- Python 3 (for password hash utilities)
 
-### Setup and Run
+### First Time Setup
 
 ```bash
 # 1. Clone the repository
 git clone <repository-url>
 cd personal-issue-tracker
 
-# 2. Start database and cache services
-docker-compose up -d
+# 2. Reset and initialize database
+./scripts/reset-dev-database.sh
 
-# 3. Start backend (in another terminal)
-cd backend && mvn spring-boot:run
-
-# 4. Start frontend (in another terminal)
-cd frontend && npm run dev
+# 3. Start the application
+./scripts/start-dev.sh
 ```
+
+### Login Credentials
+
+**Email**: `john.doe@example.com`  
+**Password**: `password123`
+
+See `backend/DEVELOPMENT_CREDENTIALS.md` for all test users.
 
 ### Access Applications
 
-- **Frontend**: http://localhost:5173
+- **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080/api
-- **API Documentation**: http://localhost:8080/api/swagger-ui.html
+- **Health Check**: http://localhost:8080/api/actuator/health
+
+## 🔧 Troubleshooting
+
+### Flyway Migration Errors
+
+If you see "Migrations have failed validation" errors:
+
+```bash
+./scripts/reset-dev-database.sh
+./scripts/start-dev.sh
+```
+
+### Authentication Errors
+
+If you can't login with the test credentials:
+
+```bash
+./scripts/reset-dev-database.sh
+./scripts/start-dev.sh
+```
+
+### Check Migration Status
+
+```bash
+./scripts/check-flyway-status.sh
+```
+
+See [Flyway Troubleshooting Guide](docs/FLYWAY_TROUBLESHOOTING.md) for detailed solutions.
 
 ## 📁 Project Structure
 

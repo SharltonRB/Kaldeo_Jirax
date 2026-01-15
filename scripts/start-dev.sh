@@ -2,15 +2,50 @@
 
 echo "🚀 Starting Personal Issue Tracker (Development)..."
 
-# Check if PostgreSQL is running
-if ! pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
-    echo "❌ PostgreSQL is not running. Please start it first:"
-    echo "   brew services start postgresql"
-    echo "   or: docker-compose up -d postgres"
+# Check if Docker is running
+if ! docker info >/dev/null 2>&1; then
+    echo "❌ Docker is not running. Please start Docker Desktop first."
     exit 1
 fi
 
-echo "✅ PostgreSQL is running"
+echo "✅ Docker is running"
+
+# Check and start PostgreSQL if needed
+echo ""
+echo "🔍 Checking PostgreSQL status..."
+if docker ps | grep -q "issue-tracker-postgres.*Up"; then
+    echo "✅ PostgreSQL is already running"
+else
+    echo "🐳 Starting PostgreSQL container..."
+    docker-compose up -d postgres
+    
+    # Wait for PostgreSQL to be ready
+    echo "⏳ Waiting for PostgreSQL to be ready..."
+    MAX_TRIES=30
+    TRIES=0
+    while ! docker exec issue-tracker-postgres pg_isready -U postgres >/dev/null 2>&1; do
+        TRIES=$((TRIES + 1))
+        if [ $TRIES -eq $MAX_TRIES ]; then
+            echo "❌ PostgreSQL failed to start after $MAX_TRIES attempts"
+            echo "   Try running: docker-compose logs postgres"
+            exit 1
+        fi
+        echo "   Waiting... ($TRIES/$MAX_TRIES)"
+        sleep 2
+    done
+    echo "✅ PostgreSQL is ready"
+fi
+
+# Check and start Redis if needed
+echo ""
+echo "🔍 Checking Redis status..."
+if docker ps | grep -q "issue-tracker-redis.*Up"; then
+    echo "✅ Redis is already running"
+else
+    echo "🐳 Starting Redis container..."
+    docker-compose up -d redis
+    echo "✅ Redis is ready"
+fi
 
 # Start backend in background
 echo "🔧 Starting backend..."

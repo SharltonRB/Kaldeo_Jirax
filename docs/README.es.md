@@ -1,57 +1,117 @@
-# Documentación - Personal Issue Tracker
+# Personal Issue Tracker - Documentación
 
-[🇪🇸 Versión en Español](README.es.md) | [🇬🇧 English Version](README.en.md)
+> **[English Version](README.md)** | Versión en Español
 
-## Estructura de Documentación
+## 📚 Estructura de Documentación
 
-### 📚 Architecture
-Diagramas de arquitectura, patrones de diseño y decisiones técnicas.
+```
+docs/
+├── guides/              # Guías de inicio y usuario
+├── deployment/          # Instrucciones de despliegue
+├── security/            # Documentación de seguridad
+├── operations/          # Mantenimiento y monitoreo
+├── architecture/        # Arquitectura del sistema
+└── testing/            # Documentación de pruebas
+```
 
-### 🚀 Deployment
-Guías de despliegue en diferentes entornos.
+---
 
-### 💻 Development
-Guías para desarrolladores, análisis de integración y resolución de problemas.
+## 🚀 Inicio Rápido
 
-### 🔧 Fixes
-Documentación de correcciones de errores y resolución de problemas.
+### Nuevos Usuarios
+1. **[Guía de Inicio](guides/STARTUP_GUIDE.md)** - Poner en marcha el proyecto
+2. **[Guía de Usuario](guides/USER_GUIDE.md)** - Aprender a usar el sistema
+3. **[Limitaciones Conocidas](guides/KNOWN_LIMITATIONS.md)** - Qué esperar
 
-### ✨ Improvements
-Documentación de mejoras de características y funcionalidades.
+### Desarrolladores
+1. **[Guía de Desarrollo](guides/DEVELOPMENT.md)** - Configurar entorno de desarrollo
+2. **[Arquitectura](architecture/README.es.md)** - Entender el sistema
+3. **[Estrategia de Pruebas](testing/TESTING_STRATEGY.md)** - Cómo probar
 
-### 🔒 Security
-Guías de seguridad, mejores prácticas y documentación relacionada con seguridad.
+### DevOps/Operaciones
+1. **[Guía de Despliegue](deployment/DEPLOYMENT_GUIDE.es.md)** - Desplegar a producción
+2. **[Guía de Mantenimiento](operations/MAINTENANCE_GUIDE.es.md)** - Mantener el sistema
+3. **[Guía de Monitoreo](operations/MONITORING_GUIDE.es.md)** - Monitorear el sistema
 
-### 🧪 Testing
-Estrategias de testing, troubleshooting y documentación de pruebas.
+---
 
-## Navegación Rápida
+## 📖 Documentación por Categoría
 
-| Categoría | Descripción | Archivos principales |
-|-----------|-------------|---------------------|
-| **Architecture** | Diseño del sistema | `architecture/` |
-| **Development** | Desarrollo y debugging | `development/` |
-| **Fixes** | Documentación de correcciones | `fixes/` |
-| **Improvements** | Mejoras de características | `improvements/` |
-| **Security** | Documentación de seguridad | `security/` |
-| **Testing** | Estrategias de testing | `testing/` |
+### 📘 Guías
+Inicio y documentación de usuario
+- **[Guía de Inicio](guides/STARTUP_GUIDE.md)** - Instrucciones de inicio rápido
+- **[Guía de Desarrollo](guides/DEVELOPMENT.md)** - Configuración del entorno
+- **[Guía de Usuario](guides/USER_GUIDE.md)** - Manual completo de usuario
+- **[Limitaciones Conocidas](guides/KNOWN_LIMITATIONS.md)** - Limitaciones actuales
 
-## Archivos de Documentación Principales
+### 🚀 Despliegue
+Instrucciones de despliegue en producción
+- **[Guía de Despliegue](deployment/DEPLOYMENT_GUIDE.md)** - Guía completa (inglés)
+- **[Guía de Despliegue (Español)](deployment/DEPLOYMENT_GUIDE.es.md)** - Guía en español
 
-- **[INDEX.md](INDEX.md)** - Índice completo de documentación
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Configuración y guías de desarrollo
-- **[SECURITY.md](SECURITY.md)** - Mejores prácticas de seguridad
-- **[PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md)** - Guía de despliegue en producción
+### 🔒 Seguridad
+Documentación de seguridad y mejores prácticas
+- **[Resumen de Seguridad](security/SECURITY.md)** - Características de seguridad
+- **[Checklist de Seguridad](security/SECURITY_CHECKLIST.md)** - Validación (inglés)
+- **[Checklist de Seguridad (Español)](security/SECURITY_CHECKLIST.es.md)** - Lista en español
 
-## Contribuir a la Documentación
+### ⚙️ Operaciones
+Mantenimiento y monitoreo
+- **[Guía de Mantenimiento](operations/MAINTENANCE_GUIDE.md)** - Mantenimiento (inglés)
+- **[Guía de Mantenimiento (Español)](operations/MAINTENANCE_GUIDE.es.md)** - Guía en español
+- **[Guía de Monitoreo](operations/MONITORING_GUIDE.md)** - Configuración (inglés)
+- **[Guía de Monitoreo (Español)](operations/MONITORING_GUIDE.es.md)** - Guía en español
 
-1. Mantén la documentación actualizada con los cambios de código
-2. Usa Markdown para consistencia
-3. Incluye diagramas cuando sea necesario
-4. Documenta decisiones arquitectónicas importantes
-5. Proporciona versiones en inglés (`.en.md`) y español (`.es.md`)
+### 🏗️ Arquitectura
+Diseño y arquitectura del sistema
+- **[Resumen de Arquitectura](architecture/README.md)** - Arquitectura (inglés)
+- **[Arquitectura (Español)](architecture/README.es.md)** - Arquitectura en español
 
-## Versiones de Idioma
+### 🧪 Pruebas
+Estrategias y guías de pruebas
+- **[Estrategia de Pruebas](testing/TESTING_STRATEGY.md)** - Enfoque de pruebas
+- **[Solución de Problemas Testcontainers](testing/TESTCONTAINERS_TROUBLESHOOTING.md)** - Problemas comunes
+- **[Pruebas Cross-Browser](testing/CROSS_BROWSER_TESTING_GUIDE.md)** - Compatibilidad
 
-- **English**: Archivos con extensión `.en.md` o `.md` para archivos principales
-- **Español**: Archivos con extensión `.es.md`
+---
+
+## 🌍 Idiomas
+
+Los documentos clave están disponibles en inglés y español:
+- 🇬🇧 English (primario)
+- 🇪🇸 Español (versiones en español marcadas con `.es.md`)
+
+---
+
+## 📝 Referencia Rápida
+
+### Quiero...
+
+**...empezar rápidamente**
+→ [Guía de Inicio](guides/STARTUP_GUIDE.md)
+
+**...aprender a usar el sistema**
+→ [Guía de Usuario](guides/USER_GUIDE.md)
+
+**...configurar el entorno de desarrollo**
+→ [Guía de Desarrollo](guides/DEVELOPMENT.md)
+
+**...desplegar a producción**
+→ [Guía de Despliegue](deployment/DEPLOYMENT_GUIDE.es.md)
+
+**...entender la arquitectura**
+→ [Arquitectura](architecture/README.es.md)
+
+**...asegurar el sistema**
+→ [Checklist de Seguridad](security/SECURITY_CHECKLIST.es.md)
+
+**...mantener el sistema**
+→ [Guía de Mantenimiento](operations/MAINTENANCE_GUIDE.es.md)
+
+**...monitorear el sistema**
+→ [Guía de Monitoreo](operations/MONITORING_GUIDE.es.md)
+
+---
+
+**Versión:** 1.0.0  
+**Última Actualización:** 14 de enero de 2026

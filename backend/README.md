@@ -3,12 +3,70 @@
 ## Description
 Backend for the Personal Issue Tracker developed with Spring Boot 3.2.1 and Java 21.
 
+## Quick Start
+
+### First Time Setup
+
+1. **Reset and initialize the database:**
+   ```bash
+   ./scripts/reset-dev-database.sh
+   ```
+
+2. **Start the application:**
+   ```bash
+   ./scripts/start-dev.sh
+   ```
+
+3. **Login with test credentials:**
+   - Email: `john.doe@example.com`
+   - Password: `password123`
+   
+   See `backend/DEVELOPMENT_CREDENTIALS.md` for all test users.
+
+### Troubleshooting
+
+#### Flyway Migration Errors
+
+If you see errors like "Migrations have failed validation" or "Detected resolved migration not applied to database":
+
+**Solution 1: Reset the database (recommended for development)**
+```bash
+./scripts/reset-dev-database.sh
+./scripts/start-dev.sh
+```
+
+**Solution 2: Check migration status**
+```bash
+./scripts/check-flyway-status.sh
+```
+
+#### Authentication Errors
+
+If you can't login with the test credentials:
+
+1. Make sure you're using the correct password: `password123`
+2. Reset the database to ensure correct password hashes:
+   ```bash
+   ./scripts/reset-dev-database.sh
+   ```
+
+## Development Credentials
+
+All test users use the password: `password123`
+
+- john.doe@example.com - Regular user with sample projects
+- jane.smith@example.com - Regular user with analytics projects  
+- admin@example.com - Admin user
+
+See `DEVELOPMENT_CREDENTIALS.md` for complete details.
+
 ## Technologies
 - **Framework**: Spring Boot 3.2.1
 - **Java**: 21
 - **Database**: PostgreSQL
-- **Authentication**: JWT
+- **Authentication**: JWT with BCrypt password hashing
 - **Cache**: Redis
+- **Migrations**: Flyway
 - **Testing**: JUnit 5, Testcontainers, QuickTheories
 
 ## Project Structure

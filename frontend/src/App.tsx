@@ -2004,10 +2004,10 @@ const Dashboard = () => {
   // const { data: issueDistribution, isLoading: distributionLoading } = useIssueDistribution();
 
   // Use local data for now
-  const dashboardMetrics = null;
-  const recentIssuesData = null;
-  const activeSprintData = null;
-  const issueDistribution = null;
+  const dashboardMetrics: any = null;
+  const recentIssuesData: any = null;
+  const activeSprintData: any = null;
+  const issueDistribution: any = null;
   const metricsLoading = false;
   const recentLoading = false;
   const sprintLoading = false;
@@ -2027,14 +2027,14 @@ const Dashboard = () => {
   const activeSprintIssues = filteredIssues.filter(i => i.sprintId === activeSprint?.id);
 
   // Use backend distribution data or calculate locally
-  const priorityCounts = issueDistribution?.byPriority || {
+  const priorityCounts: Record<string, number> = issueDistribution?.byPriority || {
     CRITICAL: activeSprintIssues.filter(i => i.priority === 'CRITICAL').length,
     HIGH: activeSprintIssues.filter(i => i.priority === 'HIGH').length,
     MEDIUM: activeSprintIssues.filter(i => i.priority === 'MEDIUM').length,
     LOW: activeSprintIssues.filter(i => i.priority === 'LOW').length,
   };
 
-  const totalActiveIssues = Object.values(priorityCounts).reduce((sum, count) => sum + count, 0) || 1;
+  const totalActiveIssues = Object.values(priorityCounts).reduce((sum: number, count: number) => sum + count, 0) || 1;
 
   // Use backend recent issues or fallback to local calculation
   const recentIssues = recentIssuesData || [...filteredIssues].sort((a, b) => {
@@ -2199,9 +2199,9 @@ const Dashboard = () => {
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">Recents</h3>
           </div>
           <div className="space-y-3">
-            {recentIssues.map(issue => {
+            {recentIssues.map((issue: any) => {
               // Handle both backend Issue and frontend FrontendIssue types
-              const issueId = typeof issue.id === 'string' ? issue.id : issue.id.toString();
+              const issueId = typeof issue.id === 'string' ? issue.id : issue.id?.toString() || '';
               const issueKey = 'key' in issue ? issue.key : `ISS-${issue.id}`;
               
               return (

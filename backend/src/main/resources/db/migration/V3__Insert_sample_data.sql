@@ -1,13 +1,15 @@
 -- Sample data for development environment
 -- This migration is only applied in development profile
 
--- Insert sample users (passwords are hashed versions of 'password123')
+-- Insert sample users
+-- Password for ALL users: password123
+-- Hash generated with BCrypt (10 rounds) matching Spring Security configuration
 -- NOTE: These are DEVELOPMENT-ONLY test users with weak passwords
 -- NEVER use these credentials in production
 INSERT INTO users (email, password_hash, name, created_at, updated_at) VALUES
-('john.doe@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P8jS9.k6ssxY6S', 'John Doe', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('jane.smith@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P8jS9.k6ssxY6S', 'Jane Smith', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('admin@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9P8jS9.k6ssxY6S', 'Admin User', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('john.doe@example.com', '$2b$10$xOH3XVhVbYSyVrTP9SleZe/NDT/0OSEnwcWyekoBlUDndYTQjSipW', 'John Doe', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('jane.smith@example.com', '$2b$10$GeXMs6fsY2MGk3AtHqmgxOiUQgee.fFX/Gyt7IquO0bclrhfX7KuO', 'Jane Smith', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('admin@example.com', '$2b$10$.s7B5t4D5zj9VJojA/sLcuV3UpzYkxgpVpenfUcMjyfMPj.pHQvwy', 'Admin User', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert sample projects for John Doe (user_id = 1)
 INSERT INTO projects (user_id, name, project_key, description, created_at, updated_at) VALUES
